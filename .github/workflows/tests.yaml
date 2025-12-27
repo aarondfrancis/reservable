@@ -20,7 +20,7 @@ jobs:
           - laravel: 11
             testbench: 9
           - laravel: 12
-            testbench: 10
+            testbench: 10.8
 
     name: SQLite - P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.dependency-version }}
 
@@ -56,7 +56,7 @@ jobs:
           - laravel: 11
             testbench: 9
           - laravel: 12
-            testbench: 10
+            testbench: 10.8
 
     name: PG17 - P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.dependency-version }}
 
@@ -114,7 +114,7 @@ jobs:
           - laravel: 11
             testbench: 9
           - laravel: 12
-            testbench: 10
+            testbench: 10.8
 
     name: MySQL8 - P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.dependency-version }}
 
