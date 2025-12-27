@@ -14,5 +14,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `reserved()` and `unreserved()` query scopes
 - Configurable model and table names via config
 - Database migrations for cache locks table
+- CI testing for SQLite and MySQL (PostgreSQL support pending)
 
 [Unreleased]: https://github.com/aarondfrancis/reservable/compare/main...HEAD
