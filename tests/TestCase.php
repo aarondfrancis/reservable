@@ -19,12 +19,41 @@ abstract class TestCase extends Orchestra
 
     protected function getEnvironmentSetUp($app): void
     {
+        $driver = env('DB_CONNECTION', 'sqlite');
+
         $app['config']->set('database.default', 'testing');
-        $app['config']->set('database.connections.testing', [
-            'driver' => 'sqlite',
-            'database' => ':memory:',
-            'prefix' => '',
-        ]);
+
+        if ($driver === 'sqlite') {
+            $app['config']->set('database.connections.testing', [
+                'driver' => 'sqlite',
+                'database' => ':memory:',
+                'prefix' => '',
+            ]);
+        } elseif ($driver === 'pgsql') {
+            $app['config']->set('database.connections.testing', [
+                'driver' => 'pgsql',
+                'host' => env('DB_HOST', '127.0.0.1'),
+                'port' => env('DB_PORT', '5432'),
+                'database' => env('DB_DATABASE', 'testing'),
+                'username' => env('DB_USERNAME', 'postgres'),
+                'password' => env('DB_PASSWORD', 'postgres'),
+                'charset' => 'utf8',
+                'prefix' => '',
+                'schema' => 'public',
+            ]);
+        } elseif ($driver === 'mysql') {
+            $app['config']->set('database.connections.testing', [
+                'driver' => 'mysql',
+                'host' => env('DB_HOST', '127.0.0.1'),
+                'port' => env('DB_PORT', '3306'),
+                'database' => env('DB_DATABASE', 'testing'),
+                'username' => env('DB_USERNAME', 'root'),
+                'password' => env('DB_PASSWORD', 'password'),
+                'charset' => 'utf8mb4',
+                'collation' => 'utf8mb4_unicode_ci',
+                'prefix' => '',
+            ]);
+        }
 
         // Use database cache driver
         $app['config']->set('cache.default', 'database');
