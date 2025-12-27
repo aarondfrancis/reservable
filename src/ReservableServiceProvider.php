@@ -10,14 +10,14 @@ class ReservableServiceProvider extends ServiceProvider
     {
         if ($this->app->runningInConsole()) {
             $this->publishes([
-                __DIR__ . '/../config/reservable.php' => config_path('reservable.php'),
+                __DIR__.'/../config/reservable.php' => config_path('reservable.php'),
             ], 'reservable-config');
 
             $this->publishesMigrations([
-                __DIR__ . '/../database/migrations' => database_path('migrations'),
+                __DIR__.'/../database/migrations' => database_path('migrations'),
             ], 'reservable-migrations');
         }
 
-        $this->mergeConfigFrom(__DIR__ . '/../config/reservable.php', 'reservable');
+        $this->mergeConfigFrom(__DIR__.'/../config/reservable.php', 'reservable');
     }
 }
