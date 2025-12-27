@@ -1,0 +1,274 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     *
+     * The reservation key format is: {prefix}reservation:{model_type}:{model_id}:{type}
+     * Examples:
+     *   laravel_cache_reservation:App\Models\User:1:processing
+     *   reservation:users:42:uploading (no prefix)
+     */
+    public function up(): void
+    {
+        $driver = Schema::getConnection()->getDriverName();
+
+        if ($driver === 'pgsql') {
+            $this->upPostgres();
+        } elseif ($driver === 'mysql' || $driver === 'mariadb') {
+            $this->upMysql();
+        } elseif ($driver === 'sqlite') {
+            $this->upSqlite();
+        } else {
+            throw new RuntimeException("Reservable does not support the [{$driver}] database driver.");
+        }
+    }
+
+    protected function upPostgres(): void
+    {
+        // For PostgreSQL, we extract the part after 'reservation:' and parse it
+        // The normalized key (after stripping prefix) is: model_type:model_id:type
+
+        DB::statement(<<<'SQL'
+            ALTER TABLE cache_locks
+            ADD COLUMN IF NOT EXISTS is_reservation BOOLEAN GENERATED ALWAYS AS (
+                "key" LIKE '%reservation:%'
+            ) STORED
+        SQL);
+
+        DB::statement(<<<'SQL'
+            ALTER TABLE cache_locks
+            ADD COLUMN IF NOT EXISTS model_type TEXT GENERATED ALWAYS AS (
+                CASE
+                    WHEN "key" LIKE '%reservation:%' THEN
+                        split_part(substring("key" from 'reservation:(.*)'), ':', 1)
+                    ELSE NULL
+                END
+            ) STORED
+        SQL);
+
+        DB::statement(<<<'SQL'
+            ALTER TABLE cache_locks
+            ADD COLUMN IF NOT EXISTS model_id BIGINT GENERATED ALWAYS AS (
+                CASE
+                    WHEN "key" LIKE '%reservation:%' THEN
+                        NULLIF(split_part(substring("key" from 'reservation:(.*)'), ':', 2), '')::BIGINT
+                    ELSE NULL
+                END
+            ) STORED
+        SQL);
+
+        DB::statement(<<<'SQL'
+            ALTER TABLE cache_locks
+            ADD COLUMN IF NOT EXISTS type TEXT GENERATED ALWAYS AS (
+                CASE
+                    WHEN "key" LIKE '%reservation:%' THEN
+                        regexp_replace(substring("key" from 'reservation:(.*)'), '^([^:]*):([^:]*):', '')
+                    ELSE NULL
+                END
+            ) STORED
+        SQL);
+    }
+
+    protected function upMysql(): void
+    {
+        // For MySQL, we find 'reservation:' and parse from there
+        // LOCATE finds position, SUBSTRING extracts from that point
+        $columns = Schema::getColumnListing('cache_locks');
+
+        if (! in_array('is_reservation', $columns)) {
+            DB::statement(<<<'SQL'
+                ALTER TABLE cache_locks
+                ADD COLUMN is_reservation BOOLEAN GENERATED ALWAYS AS (
+                    `key` LIKE '%reservation:%'
+                ) STORED
+            SQL);
+        }
+
+        if (! in_array('model_type', $columns)) {
+            DB::statement(<<<'SQL'
+                ALTER TABLE cache_locks
+                ADD COLUMN model_type VARCHAR(255) GENERATED ALWAYS AS (
+                    CASE
+                        WHEN `key` LIKE '%reservation:%' THEN
+                            SUBSTRING_INDEX(
+                                SUBSTRING(`key`, LOCATE('reservation:', `key`) + 12),
+                                ':',
+                                1
+                            )
+                        ELSE NULL
+                    END
+                ) STORED
+            SQL);
+        }
+
+        if (! in_array('model_id', $columns)) {
+            DB::statement(<<<'SQL'
+                ALTER TABLE cache_locks
+                ADD COLUMN model_id BIGINT UNSIGNED GENERATED ALWAYS AS (
+                    CASE
+                        WHEN `key` LIKE '%reservation:%' THEN
+                            CAST(
+                                SUBSTRING_INDEX(
+                                    SUBSTRING_INDEX(
+                                        SUBSTRING(`key`, LOCATE('reservation:', `key`) + 12),
+                                        ':',
+                                        2
+                                    ),
+                                    ':',
+                                    -1
+                                ) AS UNSIGNED
+                            )
+                        ELSE NULL
+                    END
+                ) STORED
+            SQL);
+        }
+
+        if (! in_array('type', $columns)) {
+            DB::statement(<<<'SQL'
+                ALTER TABLE cache_locks
+                ADD COLUMN type VARCHAR(255) GENERATED ALWAYS AS (
+                    CASE
+                        WHEN `key` LIKE '%reservation:%' THEN
+                            SUBSTRING(
+                                SUBSTRING(`key`, LOCATE('reservation:', `key`) + 12),
+                                LENGTH(
+                                    SUBSTRING_INDEX(
+                                        SUBSTRING(`key`, LOCATE('reservation:', `key`) + 12),
+                                        ':',
+                                        2
+                                    )
+                                ) + 2
+                            )
+                        ELSE NULL
+                    END
+                ) STORED
+            SQL);
+        }
+    }
+
+    protected function upSqlite(): void
+    {
+        // SQLite supports generated columns since version 3.31.0
+        // We use INSTR and SUBSTR to parse the key
+        $columns = Schema::getColumnListing('cache_locks');
+
+        // SQLite doesn't support ADD COLUMN with GENERATED, so we need to recreate the table
+        // For existing installations, we'll check if columns exist and skip if they do
+        if (in_array('is_reservation', $columns)) {
+            return; // Columns already exist
+        }
+
+        // Create a temporary table with the new structure
+        DB::statement(<<<'SQL'
+            CREATE TABLE cache_locks_new (
+                key TEXT PRIMARY KEY,
+                owner TEXT,
+                expiration INTEGER,
+                is_reservation INTEGER GENERATED ALWAYS AS (
+                    key LIKE '%reservation:%'
+                ) STORED,
+                model_type TEXT GENERATED ALWAYS AS (
+                    CASE
+                        WHEN key LIKE '%reservation:%' THEN
+                            substr(
+                                substr(key, instr(key, 'reservation:') + 12),
+                                1,
+                                instr(substr(key, instr(key, 'reservation:') + 12), ':') - 1
+                            )
+                        ELSE NULL
+                    END
+                ) STORED,
+                model_id INTEGER GENERATED ALWAYS AS (
+                    CASE
+                        WHEN key LIKE '%reservation:%' THEN
+                            CAST(
+                                substr(
+                                    substr(key, instr(key, 'reservation:') + 12),
+                                    instr(substr(key, instr(key, 'reservation:') + 12), ':') + 1,
+                                    instr(
+                                        substr(
+                                            substr(key, instr(key, 'reservation:') + 12),
+                                            instr(substr(key, instr(key, 'reservation:') + 12), ':') + 1
+                                        ),
+                                        ':'
+                                    ) - 1
+                                ) AS INTEGER
+                            )
+                        ELSE NULL
+                    END
+                ) STORED,
+                type TEXT GENERATED ALWAYS AS (
+                    CASE
+                        WHEN key LIKE '%reservation:%' THEN
+                            substr(
+                                substr(key, instr(key, 'reservation:') + 12),
+                                instr(substr(key, instr(key, 'reservation:') + 12), ':') + 1 +
+                                instr(
+                                    substr(
+                                        substr(key, instr(key, 'reservation:') + 12),
+                                        instr(substr(key, instr(key, 'reservation:') + 12), ':') + 1
+                                    ),
+                                    ':'
+                                )
+                            )
+                        ELSE NULL
+                    END
+                ) STORED
+            )
+        SQL);
+
+        // Copy existing data
+        DB::statement('INSERT INTO cache_locks_new (key, owner, expiration) SELECT key, owner, expiration FROM cache_locks');
+
+        // Drop old table and rename new one
+        DB::statement('DROP TABLE cache_locks');
+        DB::statement('ALTER TABLE cache_locks_new RENAME TO cache_locks');
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        $driver = Schema::getConnection()->getDriverName();
+
+        if ($driver === 'sqlite') {
+            // For SQLite, we need to recreate the table without the generated columns
+            DB::statement(<<<'SQL'
+                CREATE TABLE cache_locks_new (
+                    key TEXT PRIMARY KEY,
+                    owner TEXT,
+                    expiration INTEGER
+                )
+            SQL);
+
+            DB::statement('INSERT INTO cache_locks_new SELECT key, owner, expiration FROM cache_locks');
+            DB::statement('DROP TABLE cache_locks');
+            DB::statement('ALTER TABLE cache_locks_new RENAME TO cache_locks');
+        } else {
+            Schema::table('cache_locks', function ($table) {
+                $columns = Schema::getColumnListing('cache_locks');
+
+                if (in_array('is_reservation', $columns)) {
+                    $table->dropColumn('is_reservation');
+                }
+                if (in_array('model_type', $columns)) {
+                    $table->dropColumn('model_type');
+                }
+                if (in_array('model_id', $columns)) {
+                    $table->dropColumn('model_id');
+                }
+                if (in_array('type', $columns)) {
+                    $table->dropColumn('type');
+                }
+            });
+        }
+    }
+};
