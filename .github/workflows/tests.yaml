@@ -51,6 +51,7 @@ jobs:
       matrix:
         php: [8.2, 8.3, 8.4, 8.5]
         laravel: [11, 12]
+        postgres: [17, 18]
         dependency-version: [prefer-lowest, prefer-stable]
         include:
           - laravel: 11
@@ -58,11 +59,11 @@ jobs:
           - laravel: 12
             testbench: 10.8
 
-    name: PG17 - P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.dependency-version }}
+    name: PG${{ matrix.postgres }} - P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.dependency-version }}
 
     services:
       postgres:
-        image: postgres:17
+        image: postgres:${{ matrix.postgres }}
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
