@@ -92,36 +92,57 @@ return new class extends Migration
 
     protected function createPostgresCacheLocksTable(): void
     {
+        // Create table without generated columns first
         DB::statement(<<<'SQL'
             CREATE TABLE cache_locks (
                 key TEXT PRIMARY KEY,
                 owner TEXT,
-                expiration INTEGER,
-                is_reservation BOOLEAN GENERATED ALWAYS AS (
-                    key LIKE '%reservation:%'
-                ) STORED,
-                model_type TEXT GENERATED ALWAYS AS (
-                    CASE
-                        WHEN key LIKE '%reservation:%' THEN
-                            split_part(substring(key FROM position('reservation:' IN key) + 12), ':', 1)
-                        ELSE NULL
-                    END
-                ) STORED,
-                model_id INTEGER GENERATED ALWAYS AS (
-                    CASE
-                        WHEN key LIKE '%reservation:%' THEN
-                            CAST(split_part(substring(key FROM position('reservation:' IN key) + 12), ':', 2) AS INTEGER)
-                        ELSE NULL
-                    END
-                ) STORED,
-                type TEXT GENERATED ALWAYS AS (
-                    CASE
-                        WHEN key LIKE '%reservation:%' THEN
-                            split_part(substring(key FROM position('reservation:' IN key) + 12), ':', 3)
-                        ELSE NULL
-                    END
-                ) STORED
+                expiration INTEGER
             )
+        SQL);
+
+        // Add generated columns separately with safer expressions
+        // Using NULLIF and regex validation to prevent cast failures
+        DB::statement(<<<'SQL'
+            ALTER TABLE cache_locks
+            ADD COLUMN is_reservation BOOLEAN GENERATED ALWAYS AS (
+                key LIKE '%reservation:%'
+            ) STORED
+        SQL);
+
+        DB::statement(<<<'SQL'
+            ALTER TABLE cache_locks
+            ADD COLUMN model_type TEXT GENERATED ALWAYS AS (
+                CASE
+                    WHEN key LIKE '%reservation:%' THEN
+                        split_part(substring(key FROM position('reservation:' IN key) + 12), ':', 1)
+                    ELSE NULL
+                END
+            ) STORED
+        SQL);
+
+        DB::statement(<<<'SQL'
+            ALTER TABLE cache_locks
+            ADD COLUMN model_id INTEGER GENERATED ALWAYS AS (
+                CASE
+                    WHEN key LIKE '%reservation:%'
+                         AND split_part(substring(key FROM position('reservation:' IN key) + 12), ':', 2) ~ '^[0-9]+$'
+                    THEN
+                        CAST(split_part(substring(key FROM position('reservation:' IN key) + 12), ':', 2) AS INTEGER)
+                    ELSE NULL
+                END
+            ) STORED
+        SQL);
+
+        DB::statement(<<<'SQL'
+            ALTER TABLE cache_locks
+            ADD COLUMN type TEXT GENERATED ALWAYS AS (
+                CASE
+                    WHEN key LIKE '%reservation:%' THEN
+                        split_part(substring(key FROM position('reservation:' IN key) + 12), ':', 3)
+                    ELSE NULL
+                END
+            ) STORED
         SQL);
     }
 
