@@ -3,12 +3,26 @@
 namespace AaronFrancis\Reservable\Tests;
 
 use AaronFrancis\Reservable\ReservableServiceProvider;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 abstract class TestCase extends Orchestra
 {
-    use RefreshDatabase;
+    // Use DatabaseMigrations instead of RefreshDatabase.
+    // PostgreSQL generated columns have issues with RefreshDatabase's transaction-based approach.
+    use DatabaseMigrations;
+
+    protected function runDatabaseMigrations(): void
+    {
+        $this->artisan('migrate:fresh', [
+            '--path' => __DIR__.'/database/migrations',
+            '--realpath' => true,
+        ]);
+
+        $this->beforeApplicationDestroyed(function () {
+            $this->artisan('migrate:rollback');
+        });
+    }
 
     protected function getPackageProviders($app): array
     {
@@ -64,10 +78,5 @@ abstract class TestCase extends Orchestra
             'lock_connection' => 'testing',
             'lock_table' => 'cache_locks',
         ]);
-    }
-
-    protected function defineDatabaseMigrations(): void
-    {
-        $this->loadMigrationsFrom(__DIR__.'/database/migrations');
     }
 }
