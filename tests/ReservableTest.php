@@ -226,6 +226,109 @@ describe('edge cases', function () {
 
         expect($result)->toBeFalse();
     });
+
+    it('uses default duration of 60 seconds', function () {
+        $this->model->reserve('processing');
+
+        expect($this->model->isReserved('processing'))->toBeTrue();
+
+        // Still reserved after 59 seconds
+        Carbon::setTestNow(now()->addSeconds(59));
+        expect($this->model->isReserved('processing'))->toBeTrue();
+
+        // Expired after 61 seconds
+        Carbon::setTestNow(now()->addSeconds(2));
+        expect($this->model->isReserved('processing'))->toBeFalse();
+    });
+
+    it('handles past date as absolute duration', function () {
+        // diffInSeconds returns absolute value, so past dates become positive durations
+        $result = $this->model->reserve('processing', now()->subMinutes(5));
+
+        // Lock is acquired with the absolute time difference (300 seconds)
+        expect($result)->toBeTrue();
+        expect($this->model->isReserved('processing'))->toBeTrue();
+    });
+
+    it('handles special characters in keys', function () {
+        $key = 'user:123:action/process@task#1';
+
+        $result = $this->model->reserve($key, 60);
+
+        expect($result)->toBeTrue();
+        expect($this->model->isReserved($key))->toBeTrue();
+    });
+
+    it('handles numeric keys', function () {
+        $result = $this->model->reserve(12345, 60);
+
+        expect($result)->toBeTrue();
+        expect($this->model->isReserved(12345))->toBeTrue();
+    });
+
+    it('handles empty string key', function () {
+        $result = $this->model->reserve('', 60);
+
+        expect($result)->toBeTrue();
+        expect($this->model->isReserved(''))->toBeTrue();
+    });
+});
+
+describe('scope key isolation', function () {
+    it('reserved scope is key-specific', function () {
+        $model2 = TestModel::create(['name' => 'Test 2']);
+
+        $this->model->reserve('processing', 60);
+        $model2->reserve('uploading', 60);
+
+        // Only model1 is reserved for 'processing'
+        $reserved = TestModel::reserved('processing')->get();
+        expect($reserved)->toHaveCount(1);
+        expect($reserved->first()->id)->toBe($this->model->id);
+
+        // Only model2 is reserved for 'uploading'
+        $reserved = TestModel::reserved('uploading')->get();
+        expect($reserved)->toHaveCount(1);
+        expect($reserved->first()->id)->toBe($model2->id);
+    });
+
+    it('unreserved scope is key-specific', function () {
+        $model2 = TestModel::create(['name' => 'Test 2']);
+
+        $this->model->reserve('processing', 60);
+
+        // model2 is unreserved for 'processing'
+        $unreserved = TestModel::unreserved('processing')->get();
+        expect($unreserved)->toHaveCount(1);
+        expect($unreserved->first()->id)->toBe($model2->id);
+
+        // Both are unreserved for 'uploading'
+        $unreserved = TestModel::unreserved('uploading')->get();
+        expect($unreserved)->toHaveCount(2);
+    });
+
+    it('scopes work with enum keys', function () {
+        $model2 = TestModel::create(['name' => 'Test 2']);
+
+        $this->model->reserve(TestEnum::Processing, 60);
+
+        $reserved = TestModel::reserved(TestEnum::Processing)->get();
+        expect($reserved)->toHaveCount(1);
+        expect($reserved->first()->id)->toBe($this->model->id);
+
+        $unreserved = TestModel::unreserved(TestEnum::Processing)->get();
+        expect($unreserved)->toHaveCount(1);
+        expect($unreserved->first()->id)->toBe($model2->id);
+    });
+
+    it('reserveFor scope uses enum keys', function () {
+        TestModel::create(['name' => 'Test 2']);
+
+        $reserved = TestModel::reserveFor(TestEnum::Uploading, 60)->get();
+
+        expect($reserved)->toHaveCount(2);
+        expect($this->model->isReserved(TestEnum::Uploading))->toBeTrue();
+    });
 });
 
 enum TestEnum
