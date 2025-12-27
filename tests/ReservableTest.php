@@ -155,6 +155,79 @@ describe('query scopes', function () {
     });
 });
 
+describe('reservations relationship', function () {
+    it('returns active reservations', function () {
+        $this->model->reserve('processing', 60);
+        $this->model->reserve('uploading', 60);
+
+        $reservations = $this->model->reservations;
+
+        expect($reservations)->toHaveCount(2);
+        expect($reservations->pluck('type')->sort()->values()->all())->toBe(['processing', 'uploading']);
+    });
+
+    it('excludes expired reservations', function () {
+        $this->model->reserve('processing', 1);
+
+        expect($this->model->reservations)->toHaveCount(1);
+
+        Carbon::setTestNow(now()->addSeconds(2));
+
+        // Refresh to get fresh relationship
+        $this->model->refresh();
+
+        expect($this->model->reservations)->toHaveCount(0);
+    });
+
+    it('only includes reservations for this model', function () {
+        $model2 = TestModel::create(['name' => 'Test 2']);
+
+        $this->model->reserve('processing', 60);
+        $model2->reserve('processing', 60);
+
+        expect($this->model->reservations)->toHaveCount(1);
+        expect($model2->reservations)->toHaveCount(1);
+    });
+});
+
+describe('edge cases', function () {
+    it('releasing non-existent reservation does not throw', function () {
+        // Should not throw
+        $this->model->releaseReservation('never-reserved');
+
+        expect(true)->toBeTrue();
+    });
+
+    it('can re-reserve after release', function () {
+        $this->model->reserve('processing', 60);
+        $this->model->releaseReservation('processing');
+
+        $result = $this->model->reserve('processing', 60);
+
+        expect($result)->toBeTrue();
+    });
+
+    it('can re-reserve after expiration', function () {
+        $this->model->reserve('processing', 1);
+
+        Carbon::setTestNow(now()->addSeconds(2));
+
+        $result = $this->model->reserve('processing', 60);
+
+        expect($result)->toBeTrue();
+    });
+
+    it('zero duration reservation fails immediately', function () {
+        // First reservation should succeed
+        $this->model->reserve('processing', 60);
+
+        // Zero duration means "check if reserved" - should fail
+        $result = $this->model->reserve('processing', 0);
+
+        expect($result)->toBeFalse();
+    });
+});
+
 enum TestEnum
 {
     case Processing;
