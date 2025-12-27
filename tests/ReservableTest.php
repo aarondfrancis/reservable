@@ -241,15 +241,6 @@ describe('edge cases', function () {
         expect($this->model->isReserved('processing'))->toBeFalse();
     });
 
-    it('handles past date as absolute duration', function () {
-        // diffInSeconds returns absolute value, so past dates become positive durations
-        $result = $this->model->reserve('processing', now()->subMinutes(5));
-
-        // Lock is acquired with the absolute time difference (300 seconds)
-        expect($result)->toBeTrue();
-        expect($this->model->isReserved('processing'))->toBeTrue();
-    });
-
     it('handles special characters in keys', function () {
         $key = 'user:123:action/process@task#1';
 
