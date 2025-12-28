@@ -1,11 +1,9 @@
-name: Pint
+name: Fix Code Style
 
 on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
-  workflow_call:
 
 permissions:
   contents: write
@@ -13,29 +11,18 @@ permissions:
 jobs:
   pint:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
-          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+      - uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.3
-          coverage: none
+          php-version: '8.3'
 
-      - name: Install Pint
-        run: composer global require laravel/pint
+      - run: composer install --no-interaction --prefer-dist
+      - run: vendor/bin/pint
 
-      - name: Run Pint
-        run: pint
-
-      - name: Commit changes
-        uses: stefanzweifel/git-auto-commit-action@v5
+      - uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: Fix code style (Pint)
-          commit_user_name: github-actions[bot]
-          commit_user_email: github-actions[bot]@users.noreply.github.com
+          commit_message: Fix code style

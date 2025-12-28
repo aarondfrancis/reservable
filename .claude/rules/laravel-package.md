@@ -59,13 +59,13 @@ package-name/
     "name": "vendor/package-name",
     "require": {
         "php": "^8.2",
-        "illuminate/contracts": "^10.0|^11.0|^12.0",
-        "illuminate/support": "^10.0|^11.0|^12.0"
+        "illuminate/contracts": "^10.0|^11.0|^12.24",
+        "illuminate/support": "^10.0|^11.0|^12.24"
     },
     "require-dev": {
         "laravel/pint": "^1.0",
-        "orchestra/testbench": "^8.0|^9.0|^10.0",
-        "pestphp/pest": "^3.0|^4.0"
+        "orchestra/testbench": "^8.21|^9.6|^10.5",
+        "pestphp/pest": "^2.0|^3.0|^4.0"
     },
     "autoload": {
         "psr-4": { "Vendor\\Package\\": "src/" },
@@ -86,11 +86,13 @@ package-name/
 **Version Matrix** (Laravel 12, PHP 8.5, Pest 4 are released):
 | Laravel | PHP | Testbench |
 |---------|-----|-----------|
-| 10.x | 8.1+ | 8.x |
-| 11.x | 8.2+ | 9.x |
-| 12.x | 8.2+ | 10.x |
+| 10.x | 8.1-8.3 | 8.x |
+| 11.x | 8.2-8.4 | 9.x |
+| 12.24+ | 8.2-8.5 | 10.x |
 
-**PHP Support**: 8.2, 8.3, 8.4, 8.5 (exclude 8.4/8.5 from Laravel 10)
+**Note**: Laravel 12.24+ is required for PHP 8.5 support due to PHPUnit 12 API changes.
+
+**PHP Support**: 8.2, 8.3, 8.4, 8.5 (L10: 8.1-8.3, L11: 8.2-8.4, L12: 8.2-8.5)
 
 **Rules**:
 - Require `illuminate/*` packages, NEVER `laravel/framework`
@@ -344,6 +346,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_call:
 
 jobs:
   tests:
@@ -353,20 +356,18 @@ jobs:
       matrix:
         php: ['8.2', '8.3', '8.4', '8.5']
         laravel: ['10.*', '11.*', '12.*']
-        include:
-          - laravel: '10.*'
-            testbench: '8.*'
-          - laravel: '11.*'
-            testbench: '9.*'
-          - laravel: '12.*'
-            testbench: '10.*'
+        dependency-version: [prefer-lowest, prefer-stable]
         exclude:
+          # Laravel 10: PHP 8.1-8.3
           - php: '8.4'
             laravel: '10.*'
           - php: '8.5'
             laravel: '10.*'
+          # Laravel 11: PHP 8.2-8.4
           - php: '8.5'
             laravel: '11.*'
+
+    name: P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.dependency-version }}
 
     steps:
       - uses: actions/checkout@v4
@@ -376,11 +377,17 @@ jobs:
           coverage: none
 
       - run: |
-          composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-update
-          composer update --prefer-stable --no-interaction
+          composer require "laravel/framework:${{ matrix.laravel }}" --no-update
+          composer update --${{ matrix.dependency-version }} --prefer-dist --no-interaction
 
       - run: vendor/bin/pest
 ```
+
+**Testbench resolution**: Don't specify testbench in the workflow. With `"orchestra/testbench": "^8.21|^9.6|^10.5"` in composer.json, composer automatically resolves the correct version based on the Laravel constraint.
+
+**Handling prefer-lowest failures**: If `prefer-lowest` fails due to an old dependency missing a feature you need, bump the minimum version constraint (e.g., `^11.1` instead of `^11.0`). Never skip `prefer-lowest` entirely—it catches accidental dependency on newer features. Current recommended minimums:
+- Testbench: `^8.21|^9.6|^10.5` (fixes static property issues in Pest)
+- Laravel 12: `^12.24` (required for PHPUnit 12/Pest 4 compatibility on PHP 8.5)
 
 **pint.yaml** (auto-fix):
 ```yaml

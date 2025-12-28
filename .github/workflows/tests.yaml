@@ -22,7 +22,7 @@ jobs:
           - php: '8.5'
             laravel: '11.*'
 
-    name: SQLite - P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.dependency-version }}
+    name: P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.dependency-version }} - SQLite
 
     steps:
       - name: Checkout
@@ -58,7 +58,7 @@ jobs:
           - php: '8.5'
             laravel: '11.*'
 
-    name: PG${{ matrix.postgres }} - P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.dependency-version }}
+    name: P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.dependency-version }} - PG${{ matrix.postgres }}
 
     services:
       postgres:
@@ -115,7 +115,7 @@ jobs:
           - php: '8.5'
             laravel: '11.*'
 
-    name: MySQL8 - P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.dependency-version }}
+    name: P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.dependency-version }} - MySQL8
 
     services:
       mysql:
