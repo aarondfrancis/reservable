@@ -270,6 +270,21 @@ describe('edge cases', function () {
         expect($this->model->isReserved($key))->toBeTrue();
     });
 
+    it('replaces colons in keys to avoid lock format conflicts', function () {
+        // Keys with colons should work transparently
+        $key = 'namespace:action:subtype';
+
+        $result = $this->model->reserve($key, 60);
+        expect($result)->toBeTrue();
+
+        // Can check with same key
+        expect($this->model->isReserved($key))->toBeTrue();
+
+        // Verify the internal key uses underscores by checking the reservation
+        $reservation = $this->model->reservations()->first();
+        expect($reservation->type)->toBe('namespace_action_subtype');
+    });
+
     it('handles numeric keys', function () {
         $result = $this->model->reserve(12345, 60);
 
