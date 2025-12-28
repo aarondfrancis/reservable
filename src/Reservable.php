@@ -13,6 +13,7 @@ use Illuminate\Contracts\Cache\Lock;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\Cache;
+use BackedEnum;
 use UnitEnum;
 
 /**
@@ -301,7 +302,9 @@ trait Reservable
      */
     protected function disambiguateUserKey(mixed $key): string
     {
-        if ($key instanceof UnitEnum) {
+        if ($key instanceof BackedEnum) {
+            $key = (string) $key->value;
+        } elseif ($key instanceof UnitEnum) {
             $key = $key->name;
         }
 

@@ -105,6 +105,19 @@ describe('key disambiguation', function () {
         expect($this->model->isReserved($enum))->toBeTrue();
     });
 
+    it('handles backed enum keys using value', function () {
+        $enum = BackedTestEnum::Processing;
+
+        $result = $this->model->reserve($enum, 60);
+
+        expect($result)->toBeTrue();
+        expect($this->model->isReserved($enum))->toBeTrue();
+
+        // Verify it uses the backing value, not the name
+        expect($this->model->isReserved('proc'))->toBeTrue();
+        expect($this->model->isReserved('Processing'))->toBeFalse();
+    });
+
     it('handles object keys', function () {
         $object = new stdClass;
 
@@ -851,4 +864,10 @@ enum TestEnum
 {
     case Processing;
     case Uploading;
+}
+
+enum BackedTestEnum: string
+{
+    case Processing = 'proc';
+    case Uploading = 'upload';
 }
