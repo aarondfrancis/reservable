@@ -52,7 +52,7 @@ describe('publishables', function () {
     it('publishes only runs when runningInConsole', function () {
         // The service provider wraps publishes in runningInConsole check
         // We verify this by checking the provider source has the conditional
-        $providerPath = __DIR__ . '/../src/ReservableServiceProvider.php';
+        $providerPath = __DIR__.'/../src/ReservableServiceProvider.php';
         $providerSource = file_get_contents($providerPath);
 
         expect($providerSource)->toContain('runningInConsole()');

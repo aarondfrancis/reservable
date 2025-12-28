@@ -28,13 +28,11 @@ use UnitEnum;
  *     // Process the job...
  *     $job->releaseReservation('processing');
  * }
- *
  * @example
  * // Use blocking reservation to wait for availability
  * if ($job->blockingReserve('processing', 120, 30)) {
  *     // Got the lock, process the job...
  * }
- *
  * @example
  * // Query only unreserved models
  * $availableJobs = Job::unreserved('processing')->limit(10)->get();
@@ -57,31 +55,26 @@ trait Reservable
      * This method tries to obtain a lock immediately and returns the result.
      * If the lock is already held by another process, it returns false without waiting.
      *
-     * @param mixed $key The reservation key (string, enum, or object). Objects use their class name.
-     * @param string|int|Carbon $duration Lock duration in seconds, or a Carbon instance/parseable string for absolute time.
-     * @param string|null $unit Optional time unit (seconds, minutes, hours, days, weeks) when $duration is an integer.
+     * @param  mixed  $key  The reservation key (string, enum, or object). Objects use their class name.
+     * @param  string|int|Carbon  $duration  Lock duration in seconds, or a Carbon instance/parseable string for absolute time.
+     * @param  string|null  $unit  Optional time unit (seconds, minutes, hours, days, weeks) when $duration is an integer.
      * @return bool True if the reservation was acquired, false if already reserved.
      *
      * @example
      * // Reserve for 60 seconds (default)
      * $model->reserve('processing');
-     *
      * @example
      * // Reserve for 5 minutes using seconds
      * $model->reserve('processing', 300);
-     *
      * @example
      * // Reserve for 5 minutes using unit
      * $model->reserve('processing', 5, 'minutes');
-     *
      * @example
      * // Reserve for 2 hours
      * $model->reserve('processing', 2, 'hours');
-     *
      * @example
      * // Reserve until a specific time
      * $model->reserve('processing', now()->addHour());
-     *
      * @example
      * // Reserve using an enum key
      * $model->reserve(ReservationType::Processing);
@@ -97,10 +90,10 @@ trait Reservable
      * This method will wait up to the specified time for the lock to become available.
      * If the lock cannot be acquired within the wait time, it returns false.
      *
-     * @param mixed $key The reservation key (string, enum, or object). Objects use their class name.
-     * @param string|int|Carbon $duration Lock duration in seconds, or a Carbon instance/parseable string for absolute time.
-     * @param string|null $unit Optional time unit (seconds, minutes, hours, days, weeks) when $duration is an integer.
-     * @param int $wait Maximum seconds to wait for the lock to become available.
+     * @param  mixed  $key  The reservation key (string, enum, or object). Objects use their class name.
+     * @param  string|int|Carbon  $duration  Lock duration in seconds, or a Carbon instance/parseable string for absolute time.
+     * @param  string|null  $unit  Optional time unit (seconds, minutes, hours, days, weeks) when $duration is an integer.
+     * @param  int  $wait  Maximum seconds to wait for the lock to become available.
      * @return bool True if the reservation was acquired, false if timeout occurred.
      *
      * @example
@@ -108,13 +101,11 @@ trait Reservable
      * if ($model->blockingReserve('processing')) {
      *     // Process...
      * }
-     *
      * @example
      * // Wait up to 30 seconds for a 5-minute reservation
      * if ($model->blockingReserve('processing', 5, 'minutes', 30)) {
      *     // Process...
      * }
-     *
      * @example
      * // Wait up to 30 seconds for a 2-hour reservation
      * if ($model->blockingReserve('processing', 2, 'hours', 30)) {
@@ -136,10 +127,10 @@ trait Reservable
      * The reservation is automatically released after the callback completes,
      * regardless of whether it succeeds or throws an exception.
      *
-     * @param mixed $key The reservation key (string, enum, or object). Objects use their class name.
-     * @param string|int|Carbon $duration Lock duration in seconds, or a Carbon instance/parseable string for absolute time.
-     * @param callable|string|null $callbackOrUnit The callback to execute, or a time unit if using the 4-argument form.
-     * @param callable|null $callback The callback when using the 4-argument form with a unit.
+     * @param  mixed  $key  The reservation key (string, enum, or object). Objects use their class name.
+     * @param  string|int|Carbon  $duration  Lock duration in seconds, or a Carbon instance/parseable string for absolute time.
+     * @param  callable|string|null  $callbackOrUnit  The callback to execute, or a time unit if using the 4-argument form.
+     * @param  callable|null  $callback  The callback when using the 4-argument form with a unit.
      * @return mixed The return value of the callback, or false if the lock couldn't be acquired.
      *
      * @example
@@ -147,7 +138,6 @@ trait Reservable
      *     // Do work with the model...
      *     return $model->process();
      * });
-     *
      * @example
      * $result = $model->reserveWhile('processing', 5, 'minutes', function ($model) {
      *     return $model->process();
@@ -175,23 +165,20 @@ trait Reservable
      * succeeds if the reservation exists and hasn't expired. Useful for long-running
      * operations that may exceed the original reservation duration.
      *
-     * @param mixed $key The reservation key to extend.
-     * @param string|int|Carbon $duration Additional duration in seconds, or a Carbon instance/parseable string for absolute time.
-     * @param string|null $unit Optional time unit (seconds, minutes, hours, days, weeks) when $duration is an integer.
+     * @param  mixed  $key  The reservation key to extend.
+     * @param  string|int|Carbon  $duration  Additional duration in seconds, or a Carbon instance/parseable string for absolute time.
+     * @param  string|null  $unit  Optional time unit (seconds, minutes, hours, days, weeks) when $duration is an integer.
      * @return bool True if the reservation was extended, false if no active reservation exists.
      *
      * @example
      * // Extend by another 60 seconds
      * $model->extendReservation('processing');
-     *
      * @example
      * // Extend by 5 minutes using seconds
      * $model->extendReservation('processing', 300);
-     *
      * @example
      * // Extend by 5 minutes using unit
      * $model->extendReservation('processing', 5, 'minutes');
-     *
      * @example
      * // Extend until a specific time
      * $model->extendReservation('processing', now()->addHour());
@@ -215,8 +202,7 @@ trait Reservable
      * This forcefully releases the reservation, regardless of which process owns it.
      * Use with caution in distributed systems.
      *
-     * @param mixed $key The reservation key to release.
-     * @return void
+     * @param  mixed  $key  The reservation key to release.
      *
      * @example
      * $model->reserve('processing');
@@ -231,7 +217,7 @@ trait Reservable
     /**
      * Check if this model is currently reserved.
      *
-     * @param mixed $key The reservation key to check.
+     * @param  mixed  $key  The reservation key to check.
      * @return bool True if the model is reserved, false if available.
      *
      * @example
@@ -252,8 +238,8 @@ trait Reservable
      * - String: Parsed as a Carbon date/time
      * - Carbon: Difference from now in seconds
      *
-     * @param string|int|Carbon $duration The duration to normalize.
-     * @param string|null $unit Optional time unit (seconds, minutes, hours, days, weeks) when $duration is an integer.
+     * @param  string|int|Carbon  $duration  The duration to normalize.
+     * @param  string|null  $unit  Optional time unit (seconds, minutes, hours, days, weeks) when $duration is an integer.
      * @return int Duration in seconds (minimum 0).
      */
     protected function normalizeDuration(string|int|Carbon $duration, ?string $unit = null): int
@@ -282,7 +268,7 @@ trait Reservable
      * The format is: reservation:{morphClass}:{modelKey}:{userKey}
      * This format is relied upon by the database via generated columns.
      *
-     * @param string $key The user-provided reservation key.
+     * @param  string  $key  The user-provided reservation key.
      * @return string The full cache lock key.
      */
     protected function getReservationLockKey(string $key): string
@@ -305,7 +291,7 @@ trait Reservable
     /**
      * Convert a user-provided key to a string identifier.
      *
-     * @param mixed $key The key to disambiguate (string, enum, or object).
+     * @param  mixed  $key  The key to disambiguate (string, enum, or object).
      * @return string The string representation of the key.
      */
     protected function disambiguateUserKey(mixed $key): string
@@ -324,9 +310,9 @@ trait Reservable
     /**
      * Create a cache lock instance for this model.
      *
-     * @param mixed $key The reservation key.
-     * @param string|int|Carbon $duration Lock duration.
-     * @param string|null $unit Optional time unit (seconds, minutes, hours, days, weeks) when $duration is an integer.
+     * @param  mixed  $key  The reservation key.
+     * @param  string|int|Carbon  $duration  Lock duration.
+     * @param  string|null  $unit  Optional time unit (seconds, minutes, hours, days, weeks) when $duration is an integer.
      * @return Lock The cache lock instance.
      */
     protected function reservation(mixed $key, string|int|Carbon $duration = self::DEFAULT_RESERVATION_DURATION, ?string $unit = null): Lock
@@ -350,16 +336,14 @@ trait Reservable
      * This scope filters to unreserved models and then attempts to reserve
      * each result. Only models that were successfully reserved are returned.
      *
-     * @param Builder $query The query builder instance.
-     * @param mixed $key The reservation key.
-     * @param string|int|Carbon $duration Lock duration in seconds.
-     * @param string|null $unit Optional time unit (seconds, minutes, hours, days, weeks) when $duration is an integer.
-     * @return void
+     * @param  Builder  $query  The query builder instance.
+     * @param  mixed  $key  The reservation key.
+     * @param  string|int|Carbon  $duration  Lock duration in seconds.
+     * @param  string|null  $unit  Optional time unit (seconds, minutes, hours, days, weeks) when $duration is an integer.
      *
      * @example
      * // Get up to 10 unreserved jobs and reserve them for 120 seconds
      * $jobs = Job::reserveFor('worker-1', 120)->limit(10)->get();
-     *
      * @example
      * // Get up to 10 unreserved jobs and reserve them for 5 minutes
      * $jobs = Job::reserveFor('worker-1', 5, 'minutes')->limit(10)->get();
@@ -378,9 +362,8 @@ trait Reservable
     /**
      * Scope to filter models that are currently reserved.
      *
-     * @param Builder $query The query builder instance.
-     * @param mixed $key The reservation key to check.
-     * @return void
+     * @param  Builder  $query  The query builder instance.
+     * @param  mixed  $key  The reservation key to check.
      *
      * @example
      * // Get all jobs currently being processed
@@ -398,9 +381,8 @@ trait Reservable
     /**
      * Scope to filter models that are not currently reserved.
      *
-     * @param Builder $query The query builder instance.
-     * @param mixed $key The reservation key to check.
-     * @return void
+     * @param  Builder  $query  The query builder instance.
+     * @param  mixed  $key  The reservation key to check.
      *
      * @example
      * // Get all available jobs
