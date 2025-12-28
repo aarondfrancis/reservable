@@ -29,7 +29,7 @@ This package requires Laravel's database cache driver. Make sure your `cache_loc
 
 The published migration adds generated columns to parse reservation keys into queryable columns. This allows efficient querying of reserved/unreserved models.
 
-**Supported databases:** PostgreSQL, MySQL/MariaDB, SQLite (limited support)
+**Supported databases:** PostgreSQL, MySQL/MariaDB, SQLite
 
 ## Usage
 
