@@ -312,7 +312,9 @@ trait Reservable
             $key = get_class($key);
         }
 
-        return $key;
+        // Replace colons with underscores to avoid conflicts with the lock key format
+        // which uses colons as delimiters: reservation:{morphClass}:{modelKey}:{userKey}
+        return str_replace(':', '_', $key);
     }
 
     /**
