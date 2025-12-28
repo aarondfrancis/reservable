@@ -1,5 +1,10 @@
 # Reservable
 
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/aaronfrancis/reservable.svg?style=flat-square)](https://packagist.org/packages/aaronfrancis/reservable)
+[![Total Downloads](https://img.shields.io/packagist/dt/aaronfrancis/reservable.svg?style=flat-square)](https://packagist.org/packages/aaronfrancis/reservable)
+[![PHP Version](https://img.shields.io/packagist/php-v/aaronfrancis/reservable.svg?style=flat-square)](https://packagist.org/packages/aaronfrancis/reservable)
+[![License](https://img.shields.io/packagist/l/aaronfrancis/reservable.svg?style=flat-square)](https://packagist.org/packages/aaronfrancis/reservable)
+
 Eloquent model reservation/locking through Laravel's cache lock system.
 
 This package allows you to temporarily "reserve" Eloquent models using Laravel's atomic cache locks. This is useful when you need to ensure exclusive access to a model for a period of time, such as during background processing.
