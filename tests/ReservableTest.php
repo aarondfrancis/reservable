@@ -3,6 +3,7 @@
 use AaronFrancis\Reservable\Tests\Models\AnotherTestModel;
 use AaronFrancis\Reservable\Tests\Models\TestModel;
 use Carbon\Carbon;
+use Carbon\Unit;
 
 beforeEach(function () {
     $this->model = TestModel::create(['name' => 'Test']);
@@ -780,6 +781,69 @@ describe('duration units', function () {
         $expectedExp2 = Carbon::now()->timestamp + 120;
         expect($reservation2->expiration)->toBeGreaterThanOrEqual($expectedExp2 - 1);
         expect($reservation2->expiration)->toBeLessThanOrEqual($expectedExp2 + 1);
+    });
+
+    it('reserve accepts Carbon Unit enum', function () {
+        $this->model->reserve('processing', 5, Unit::Minute);
+
+        expect($this->model->isReserved('processing'))->toBeTrue();
+
+        $reservation = $this->model->reservations()->first();
+        $expectedExpiration = Carbon::now()->timestamp + 300;
+        expect($reservation->expiration)->toBeGreaterThanOrEqual($expectedExpiration - 1);
+        expect($reservation->expiration)->toBeLessThanOrEqual($expectedExpiration + 1);
+    });
+
+    it('reserve accepts Carbon Unit::Hour', function () {
+        $this->model->reserve('processing', 2, Unit::Hour);
+
+        $reservation = $this->model->reservations()->first();
+        $expectedExpiration = Carbon::now()->timestamp + 7200;
+        expect($reservation->expiration)->toBeGreaterThanOrEqual($expectedExpiration - 1);
+        expect($reservation->expiration)->toBeLessThanOrEqual($expectedExpiration + 1);
+    });
+
+    it('blockingReserve accepts Carbon Unit enum', function () {
+        $result = $this->model->blockingReserve('processing', 5, Unit::Minute, 1);
+
+        expect($result)->toBeTrue();
+
+        $reservation = $this->model->reservations()->first();
+        $expectedExpiration = Carbon::now()->timestamp + 300;
+        expect($reservation->expiration)->toBeGreaterThanOrEqual($expectedExpiration - 1);
+        expect($reservation->expiration)->toBeLessThanOrEqual($expectedExpiration + 1);
+    });
+
+    it('reserveWhile accepts Carbon Unit enum', function () {
+        $result = $this->model->reserveWhile('processing', 5, Unit::Minute, function ($model) {
+            return 'success';
+        });
+
+        expect($result)->toBe('success');
+    });
+
+    it('extendReservation accepts Carbon Unit enum', function () {
+        $this->model->reserve('processing', 1, Unit::Minute);
+
+        $result = $this->model->extendReservation('processing', 10, Unit::Minute);
+
+        expect($result)->toBeTrue();
+
+        $reservation = $this->model->reservations()->first();
+        $expectedExpiration = Carbon::now()->timestamp + 600;
+        expect($reservation->expiration)->toBeGreaterThanOrEqual($expectedExpiration - 1);
+        expect($reservation->expiration)->toBeLessThanOrEqual($expectedExpiration + 1);
+    });
+
+    it('scopeReserveFor accepts Carbon Unit enum', function () {
+        $models = TestModel::reserveFor('worker-1', 5, Unit::Minute)->get();
+
+        expect($models)->toHaveCount(1);
+
+        $reservation = $models->first()->reservations()->first();
+        $expectedExpiration = Carbon::now()->timestamp + 300;
+        expect($reservation->expiration)->toBeGreaterThanOrEqual($expectedExpiration - 1);
+        expect($reservation->expiration)->toBeLessThanOrEqual($expectedExpiration + 1);
     });
 });
 
