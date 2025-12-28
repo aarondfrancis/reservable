@@ -15,7 +15,7 @@ This creates `config/reservable.php`.
 ### model
 
 ```php
-'model' => AaronFrancis\Reservable\CacheLock::class,
+'model' => AaronFrancis\Reservable\Models\CacheLock::class,
 ```
 
 The Eloquent model representing cache locks. Override this to use a custom model.
@@ -27,7 +27,7 @@ The Eloquent model representing cache locks. Override this to use a custom model
 
 namespace App\Models;
 
-use AaronFrancis\Reservable\CacheLock as BaseCacheLock;
+use AaronFrancis\Reservable\Models\CacheLock as BaseCacheLock;
 
 class CacheLock extends BaseCacheLock
 {
@@ -68,7 +68,7 @@ return [
     | have the generated columns that parse the reservation key format.
     |
     */
-    'model' => AaronFrancis\Reservable\CacheLock::class,
+    'model' => AaronFrancis\Reservable\Models\CacheLock::class,
 ];
 ```
 

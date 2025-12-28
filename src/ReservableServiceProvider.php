@@ -6,6 +6,11 @@ use Illuminate\Support\ServiceProvider;
 
 class ReservableServiceProvider extends ServiceProvider
 {
+    public function register(): void
+    {
+        $this->mergeConfigFrom(__DIR__.'/../config/reservable.php', 'reservable');
+    }
+
     public function boot(): void
     {
         if ($this->app->runningInConsole()) {
@@ -17,7 +22,5 @@ class ReservableServiceProvider extends ServiceProvider
                 __DIR__.'/../database/migrations' => database_path('migrations'),
             ], 'reservable-migrations');
         }
-
-        $this->mergeConfigFrom(__DIR__.'/../config/reservable.php', 'reservable');
     }
 }

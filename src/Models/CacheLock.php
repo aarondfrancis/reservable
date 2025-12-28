@@ -1,6 +1,6 @@
 <?php
 
-namespace AaronFrancis\Reservable;
+namespace AaronFrancis\Reservable\Models;
 
 use Illuminate\Database\Eloquent\Model;
 

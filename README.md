@@ -1,6 +1,7 @@
 # Reservable
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/aaronfrancis/reservable.svg?style=flat-square)](https://packagist.org/packages/aaronfrancis/reservable)
+[![Tests](https://github.com/aarondfrancis/reservable/actions/workflows/tests.yaml/badge.svg)](https://github.com/aarondfrancis/reservable/actions/workflows/tests.yaml)
 [![Total Downloads](https://img.shields.io/packagist/dt/aaronfrancis/reservable.svg?style=flat-square)](https://packagist.org/packages/aaronfrancis/reservable)
 [![PHP Version](https://img.shields.io/packagist/php-v/aaronfrancis/reservable.svg?style=flat-square)](https://packagist.org/packages/aaronfrancis/reservable)
 [![License](https://img.shields.io/packagist/l/aaronfrancis/reservable.svg?style=flat-square)](https://packagist.org/packages/aaronfrancis/reservable)
@@ -41,7 +42,7 @@ The published migration adds generated columns to parse reservation keys into qu
 Add the `Reservable` trait to your model:
 
 ```php
-use AaronFrancis\Reservable\Reservable;
+use AaronFrancis\Reservable\Concerns\Reservable;
 
 class Video extends Model
 {
@@ -238,7 +239,7 @@ The `reserveFor` scope combines this with query filtering: it finds unreserved m
 
 ### The CacheLock model
 
-Reservable uses an Eloquent model (`AaronFrancis\Reservable\CacheLock`) to query the `cache_locks` table. This model provides the `reservations()` relationship on your reservable models, allowing you to access active locks:
+Reservable uses an Eloquent model (`AaronFrancis\Reservable\Models\CacheLock`) to query the `cache_locks` table. This model provides the `reservations()` relationship on your reservable models, allowing you to access active locks:
 
 ```php
 $video->reservations; // Collection of active CacheLock models
@@ -253,7 +254,7 @@ You can swap this for a custom model in the config if you need to add functional
 
 return [
     // The model representing cache locks
-    'model' => AaronFrancis\Reservable\CacheLock::class,
+    'model' => AaronFrancis\Reservable\Models\CacheLock::class,
 ];
 ```
 

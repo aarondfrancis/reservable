@@ -4,8 +4,9 @@
  * @author Aaron Francis <aarondfrancis@gmail.com|https://twitter.com/aarondfrancis>
  */
 
-namespace AaronFrancis\Reservable;
+namespace AaronFrancis\Reservable\Concerns;
 
+use AaronFrancis\Reservable\Models\CacheLock;
 use BackedEnum;
 use Carbon\Carbon;
 use Carbon\CarbonInterval;

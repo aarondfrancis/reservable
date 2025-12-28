@@ -25,7 +25,7 @@ Reservable allows you to temporarily "reserve" Eloquent models using Laravel's a
 ## Quick Example
 
 ```php
-use AaronFrancis\Reservable\Reservable;
+use AaronFrancis\Reservable\Concerns\Reservable;
 
 class Video extends Model
 {

@@ -1,6 +1,6 @@
 <?php
 
-use AaronFrancis\Reservable\CacheLock;
+use AaronFrancis\Reservable\Models\CacheLock;
 
 describe('model configuration', function () {
     it('has table name cache_locks', function () {

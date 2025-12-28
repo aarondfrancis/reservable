@@ -31,7 +31,7 @@ abstract class TestCase extends Orchestra
         ];
     }
 
-    protected function getEnvironmentSetUp($app): void
+    protected function defineEnvironment($app): void
     {
         $driver = env('DB_CONNECTION', 'sqlite');
 
