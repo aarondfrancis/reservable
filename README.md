@@ -101,6 +101,8 @@ $videos = Video::reserveFor('processing', 60)->limit(5)->get();
 
 The `reserveFor` scope filters to unreserved models, then atomically reserves each one that's returned. Models that can't be reserved (race condition) are filtered out.
 
+> **Note:** Because of race conditions, `reserveFor()->limit(5)` may return fewer than 5 results. If another process reserves a model between the query and the lock attempt, that model is excluded from the results.
+
 ### Key types
 
 Reservation keys can be strings, enums, or objects:
@@ -181,6 +183,16 @@ This is much more efficient than fetching all videos and checking each lock indi
 The `reserve()` method uses Laravel's `Lock::get()` which performs an atomic database operation—either the lock is acquired or it isn't. There's no window where two processes can both think they have the lock.
 
 The `reserveFor` scope combines this with query filtering: it finds unreserved models, then attempts to reserve each one, filtering out any that fail due to race conditions.
+
+### The CacheLock model
+
+Reservable uses an Eloquent model (`AaronFrancis\Reservable\CacheLock`) to query the `cache_locks` table. This model provides the `reservations()` relationship on your reservable models, allowing you to access active locks:
+
+```php
+$video->reservations; // Collection of active CacheLock models
+```
+
+You can swap this for a custom model in the config if you need to add functionality.
 
 ## Configuration
 
