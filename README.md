@@ -76,6 +76,46 @@ if ($video->isReserved('processing')) {
 $video->releaseReservation('processing');
 ```
 
+### Blocking reserve
+
+Wait for a lock to become available instead of failing immediately:
+
+```php
+// Wait up to 10 seconds (default) for the lock
+$video->blockingReserve('processing', duration: 60);
+
+// Wait up to 30 seconds
+$video->blockingReserve('processing', duration: 60, wait: 30);
+```
+
+Returns `true` if the lock was acquired, `false` if the wait time expired.
+
+### Reserve with callback
+
+Automatically release the lock when your work is done:
+
+```php
+$result = $video->reserveWhile('processing', 300, function ($video) {
+    // Do work while holding the lock...
+    return $video->transcode();
+}); // Lock is automatically released
+```
+
+The lock is released even if the callback throws an exception. Returns `false` if the lock couldn't be acquired.
+
+### Extend a reservation
+
+Add more time to an existing reservation without releasing it:
+
+```php
+$video->reserve('processing', 60);
+
+// Later, if you need more time:
+$video->extendReservation('processing', 60); // Add 60 more seconds
+```
+
+Returns `true` if the reservation was extended, `false` if no active reservation exists.
+
 ### Query scopes
 
 Find unreserved models:

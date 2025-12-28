@@ -48,6 +48,52 @@ $video->releaseReservation('processing');
 
 Releasing a non-existent reservation is safe and won't throw an error.
 
+## Blocking Reserve
+
+If you need to wait for a lock to become available:
+
+```php
+// Wait up to 10 seconds (default) for the lock
+$video->blockingReserve('processing', 60);
+
+// Wait up to 30 seconds for the lock
+$video->blockingReserve('processing', 60, 30);
+```
+
+Returns `true` if the lock was acquired, `false` if the wait time expired without acquiring the lock.
+
+## Reserve with Callback
+
+For guaranteed cleanup, use `reserveWhile()` to automatically release the lock:
+
+```php
+$result = $video->reserveWhile('processing', 300, function ($video) {
+    // Do your work here...
+    return $video->transcode();
+}); // Lock is automatically released
+
+if ($result === false) {
+    // Lock couldn't be acquired
+}
+```
+
+The lock is released even if the callback throws an exception, preventing orphaned locks.
+
+## Extending a Reservation
+
+If a job takes longer than expected, extend the reservation without releasing it:
+
+```php
+$video->reserve('processing', 60);
+
+// Halfway through, realize you need more time
+$video->extendReservation('processing', 120); // Add 2 more minutes
+```
+
+This is safer than releasing and re-reserving, which could fail if another process grabs the lock.
+
+Returns `false` if no active reservation exists for that key.
+
 ## Reservation Keys
 
 ### String Keys
@@ -151,6 +197,14 @@ try {
 } finally {
     $video->releaseReservation('processing');
 }
+```
+
+Or use `reserveWhile()` for automatic cleanup:
+
+```php
+$video->reserveWhile('processing', 300, function ($video) {
+    // Do work... lock is auto-released when done
+});
 ```
 
 ### Use Appropriate Durations

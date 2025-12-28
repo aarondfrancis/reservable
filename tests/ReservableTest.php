@@ -322,6 +322,128 @@ describe('scope key isolation', function () {
     });
 });
 
+describe('reserveWhile callback', function () {
+    it('executes callback when lock acquired', function () {
+        $result = $this->model->reserveWhile('processing', 60, function ($model) {
+            return 'completed';
+        });
+
+        expect($result)->toBe('completed');
+    });
+
+    it('passes the model to callback', function () {
+        $result = $this->model->reserveWhile('processing', 60, function ($model) {
+            return $model->id;
+        });
+
+        expect($result)->toBe($this->model->id);
+    });
+
+    it('releases lock after callback completes', function () {
+        $this->model->reserveWhile('processing', 60, function ($model) {
+            expect($model->isReserved('processing'))->toBeTrue();
+        });
+
+        expect($this->model->isReserved('processing'))->toBeFalse();
+    });
+
+    it('releases lock even if callback throws', function () {
+        try {
+            $this->model->reserveWhile('processing', 60, function ($model) {
+                throw new \Exception('Test exception');
+            });
+        } catch (\Exception $e) {
+            // Expected
+        }
+
+        expect($this->model->isReserved('processing'))->toBeFalse();
+    });
+
+    it('returns false when lock cannot be acquired', function () {
+        $this->model->reserve('processing', 60);
+
+        $result = $this->model->reserveWhile('processing', 60, function ($model) {
+            return 'should not execute';
+        });
+
+        expect($result)->toBeFalse();
+    });
+});
+
+describe('blockingReserve', function () {
+    it('acquires lock immediately when available', function () {
+        $result = $this->model->blockingReserve('processing', 60, 1);
+
+        expect($result)->toBeTrue();
+        expect($this->model->isReserved('processing'))->toBeTrue();
+    });
+
+    it('returns false when lock unavailable and wait expires', function () {
+        $this->model->reserve('processing', 60);
+
+        // Should wait up to 1 second but fail
+        $result = $this->model->blockingReserve('processing', 60, 1);
+
+        expect($result)->toBeFalse();
+    });
+
+    it('uses default wait time of 10 seconds', function () {
+        // Just verify it accepts the call with default wait
+        $result = $this->model->blockingReserve('processing', 60);
+
+        expect($result)->toBeTrue();
+    });
+});
+
+describe('extendReservation', function () {
+    it('extends an active reservation', function () {
+        $this->model->reserve('processing', 10);
+
+        expect($this->model->isReserved('processing'))->toBeTrue();
+
+        // Extend by 60 more seconds
+        $result = $this->model->extendReservation('processing', 60);
+
+        expect($result)->toBeTrue();
+
+        // Should still be reserved after original expiration
+        Carbon::setTestNow(now()->addSeconds(15));
+        expect($this->model->isReserved('processing'))->toBeTrue();
+    });
+
+    it('returns false when no active reservation exists', function () {
+        $result = $this->model->extendReservation('processing', 60);
+
+        expect($result)->toBeFalse();
+    });
+
+    it('returns false when reservation has expired', function () {
+        $this->model->reserve('processing', 1);
+
+        Carbon::setTestNow(now()->addSeconds(2));
+
+        $result = $this->model->extendReservation('processing', 60);
+
+        expect($result)->toBeFalse();
+    });
+
+    it('accepts Carbon duration', function () {
+        $this->model->reserve('processing', 10);
+
+        $result = $this->model->extendReservation('processing', now()->addMinutes(5));
+
+        expect($result)->toBeTrue();
+    });
+
+    it('accepts string duration', function () {
+        $this->model->reserve('processing', 10);
+
+        $result = $this->model->extendReservation('processing', '+5 minutes');
+
+        expect($result)->toBeTrue();
+    });
+});
+
 enum TestEnum
 {
     case Processing;

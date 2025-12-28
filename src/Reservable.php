@@ -20,6 +20,43 @@ trait Reservable
         return $this->reservation($key, $duration)->get();
     }
 
+    public function blockingReserve(mixed $key, string|int|Carbon $duration = 60, int $wait = 10): bool
+    {
+        try {
+            return $this->reservation($key, $duration)->block($wait);
+        } catch (\Illuminate\Contracts\Cache\LockTimeoutException) {
+            return false;
+        }
+    }
+
+    public function reserveWhile(mixed $key, string|int|Carbon $duration, callable $callback): mixed
+    {
+        return $this->reservation($key, $duration)->get(function () use ($callback) {
+            return $callback($this);
+        });
+    }
+
+    public function extendReservation(mixed $key, string|int|Carbon $duration = 60): bool
+    {
+        if (is_string($duration)) {
+            $duration = Carbon::make($duration);
+        }
+
+        if ($duration instanceof Carbon) {
+            $duration = max(0, $duration->diffInSeconds(now()));
+        }
+
+        $key = $this->disambiguateUserKey($key);
+        $lockKey = "reservation:{$this->getMorphClass()}:{$this->getKey()}:{$key}";
+
+        $model = config('reservable.model', CacheLock::class);
+
+        return (bool) $model::query()
+            ->where('key', Cache::getPrefix().$lockKey)
+            ->where('expiration', '>', Carbon::now()->timestamp)
+            ->update(['expiration' => Carbon::now()->timestamp + $duration]);
+    }
+
     public function releaseReservation(mixed $key): void
     {
         $this->reservation($key)->forceRelease();

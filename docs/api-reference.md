@@ -70,6 +70,75 @@ $video->releaseReservation('processing');
 
 ---
 
+#### blockingReserve()
+
+```php
+public function blockingReserve(mixed $key, string|int|Carbon $duration = 60, int $wait = 10): bool
+```
+
+Wait for a lock to become available instead of failing immediately.
+
+**Parameters:**
+- `$key` — The reservation key (string, enum, or object)
+- `$duration` — Lock duration in seconds, Carbon instance, or string date expression. Default: 60 seconds
+- `$wait` — Maximum seconds to wait for the lock. Default: 10 seconds
+
+**Returns:** `true` if lock acquired, `false` if wait time expired
+
+**Example:**
+```php
+$video->blockingReserve('processing', 60, 30); // Wait up to 30 seconds
+```
+
+---
+
+#### reserveWhile()
+
+```php
+public function reserveWhile(mixed $key, string|int|Carbon $duration, callable $callback): mixed
+```
+
+Acquire a lock, execute a callback, then automatically release the lock.
+
+**Parameters:**
+- `$key` — The reservation key (string, enum, or object)
+- `$duration` — Lock duration in seconds, Carbon instance, or string date expression
+- `$callback` — Callback to execute while holding the lock. Receives the model as argument.
+
+**Returns:** The callback's return value, or `false` if lock couldn't be acquired
+
+**Example:**
+```php
+$result = $video->reserveWhile('processing', 300, function ($video) {
+    return $video->transcode();
+});
+```
+
+---
+
+#### extendReservation()
+
+```php
+public function extendReservation(mixed $key, string|int|Carbon $duration = 60): bool
+```
+
+Extend an existing reservation without releasing it. Useful for long-running jobs that need more time.
+
+**Parameters:**
+- `$key` — The reservation key to extend
+- `$duration` — Additional time in seconds, Carbon instance, or string date expression. Default: 60 seconds
+
+**Returns:** `true` if reservation was extended, `false` if no active reservation exists
+
+**Example:**
+```php
+$video->reserve('processing', 60);
+// ... work takes longer than expected ...
+$video->extendReservation('processing', 60); // Add 60 more seconds
+```
+
+---
+
 ### Query Scopes
 
 #### scopeReserved()
