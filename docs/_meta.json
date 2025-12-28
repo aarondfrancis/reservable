@@ -1,0 +1,12 @@
+{
+    "title": "Reservable",
+    "description": "Eloquent model reservation/locking through Laravel's cache lock system",
+    "pages": [
+        { "slug": "index", "title": "Introduction" },
+        { "slug": "installation", "title": "Installation" },
+        { "slug": "usage", "title": "Usage" },
+        { "slug": "query-scopes", "title": "Query Scopes" },
+        { "slug": "api-reference", "title": "API Reference" },
+        { "slug": "configuration", "title": "Configuration" }
+    ]
+}
