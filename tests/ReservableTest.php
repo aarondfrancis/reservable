@@ -7,6 +7,10 @@ beforeEach(function () {
     $this->model = TestModel::create(['name' => 'Test']);
 });
 
+afterEach(function () {
+    Carbon::setTestNow();
+});
+
 describe('basic reservations', function () {
     it('can reserve a model', function () {
         $result = $this->model->reserve('processing');
