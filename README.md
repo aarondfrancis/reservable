@@ -90,6 +90,8 @@ Find reserved models:
 $reserved = Video::reserved('processing')->get();
 ```
 
+> **Note:** These scopes return point-in-time results. By the time you try to reserve a model from the results, another process may have already reserved it. Use `reserveFor` for atomic find-and-reserve operations.
+
 Find and reserve in one query:
 
 ```php

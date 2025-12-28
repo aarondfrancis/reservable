@@ -4,7 +4,9 @@ Reservable provides query scopes to efficiently filter models by their reservati
 
 ## unreserved()
 
-Find models that are not currently reserved for a given key:
+Find models that are not currently reserved for a given key.
+
+> **Note:** This scope returns point-in-time results. By the time you try to reserve a model, another process may have already reserved it. Use `reserveFor()` for atomic find-and-reserve operations.
 
 ```php
 // Get all videos not reserved for processing
