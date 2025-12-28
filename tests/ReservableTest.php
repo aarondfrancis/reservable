@@ -83,11 +83,11 @@ describe('duration handling', function () {
     });
 
     it('expires after duration', function () {
-        $this->model->reserve('processing', 1);
+        $this->model->reserve('processing', 60);
 
         expect($this->model->isReserved('processing'))->toBeTrue();
 
-        Carbon::setTestNow(now()->addSeconds(2));
+        Carbon::setTestNow(now()->addSeconds(61));
 
         expect($this->model->isReserved('processing'))->toBeFalse();
     });
@@ -171,11 +171,12 @@ describe('reservations relationship', function () {
     });
 
     it('excludes expired reservations', function () {
-        $this->model->reserve('processing', 1);
+        $this->model->reserve('processing', 60);
 
         expect($this->model->reservations)->toHaveCount(1);
 
-        Carbon::setTestNow(now()->addSeconds(2));
+        // Jump past expiration
+        Carbon::setTestNow(now()->addSeconds(61));
 
         // Refresh to get fresh relationship
         $this->model->refresh();
