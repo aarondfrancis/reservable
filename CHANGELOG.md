@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2025-12-28
+
 ### Added
 - `Reservable` trait for Eloquent models with cache-based locking
 - `CacheLock` model for tracking reservations
@@ -16,4 +18,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Database migrations for cache locks table
 - CI testing for SQLite, MySQL, and PostgreSQL 17
 
-[Unreleased]: https://github.com/aarondfrancis/reservable/compare/main...HEAD
+
+[Unreleased]: https://github.com/aarondfrancis/reservable/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/aarondfrancis/reservable/releases/tag/v0.1.0
