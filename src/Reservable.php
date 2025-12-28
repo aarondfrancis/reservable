@@ -6,6 +6,7 @@
 
 namespace AaronFrancis\Reservable;
 
+use BackedEnum;
 use Carbon\Carbon;
 use Carbon\CarbonInterval;
 use Carbon\Unit;
@@ -13,7 +14,6 @@ use Illuminate\Contracts\Cache\Lock;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\Cache;
-use BackedEnum;
 use UnitEnum;
 
 /**
