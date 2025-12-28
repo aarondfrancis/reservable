@@ -131,13 +131,56 @@ $video->isReserved('uploading'); // false
 
 ## How it works
 
-Reservable uses Laravel's cache lock system with a specially formatted key:
+Reservable builds on Laravel's atomic cache locks, which use the `cache_locks` table to provide database-level mutual exclusion.
+
+### Lock key format
+
+When you call `$video->reserve('processing')`, Reservable creates a cache lock with a specially formatted key:
 
 ```
-reservation:{morph_class}:{model_id}:{key}
+reservation:{morph_class}:{model_id}:{reservation_key}
 ```
 
-The migration adds generated columns that parse this key format, enabling efficient SQL queries to filter reserved/unreserved models without needing to check each lock individually.
+For example: `reservation:App\Models\Video:42:processing`
+
+### Generated columns
+
+The challenge with cache locks is that they're not inherently queryable by model. You can't efficiently ask "give me all Videos that aren't locked" because the lock table doesn't know about your models.
+
+Reservable solves this by adding **generated columns** to the `cache_locks` table that parse the key format:
+
+| Column | Extracted From | Example Value |
+|--------|----------------|---------------|
+| `is_reservation` | Key contains `reservation:` | `true` |
+| `model_type` | Second segment | `App\Models\Video` |
+| `model_id` | Third segment | `42` |
+| `type` | Fourth segment | `processing` |
+
+These columns are computed automatically by the database whenever a row is inserted or updated. The exact SQL varies by database engine (PostgreSQL uses `split_part()`, MySQL uses `SUBSTRING_INDEX()`, SQLite uses `substr()`).
+
+### Efficient queries
+
+With generated columns in place, the `reserved()` and `unreserved()` scopes become simple JOIN queries:
+
+```sql
+-- Find unreserved videos
+SELECT * FROM videos
+WHERE NOT EXISTS (
+    SELECT 1 FROM cache_locks
+    WHERE model_type = 'App\Models\Video'
+    AND model_id = videos.id
+    AND type = 'processing'
+    AND expiration > UNIX_TIMESTAMP()
+)
+```
+
+This is much more efficient than fetching all videos and checking each lock individually in PHP.
+
+### Atomic reservations
+
+The `reserve()` method uses Laravel's `Lock::get()` which performs an atomic database operation—either the lock is acquired or it isn't. There's no window where two processes can both think they have the lock.
+
+The `reserveFor` scope combines this with query filtering: it finds unreserved models, then attempts to reserve each one, filtering out any that fail due to race conditions.
 
 ## Configuration
 
