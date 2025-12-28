@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2025-12-28
+
 ### Added
 - MIT LICENSE file
 - `pint.json` for code style configuration
@@ -16,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Moved `Reservable` trait to `AaronFrancis\Reservable\Concerns\Reservable`
 - Moved `CacheLock` model to `AaronFrancis\Reservable\Models\CacheLock`
 - Refactored `ReservableServiceProvider` to use proper `register()` and `boot()` separation
+
 
 ## [0.1.0] - 2025-12-28
 
@@ -29,5 +32,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI testing for SQLite, MySQL, and PostgreSQL 17
 
 
-[Unreleased]: https://github.com/aarondfrancis/reservable/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/aarondfrancis/reservable/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/aarondfrancis/reservable/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/aarondfrancis/reservable/releases/tag/v0.1.0
