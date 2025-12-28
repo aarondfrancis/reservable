@@ -20,6 +20,27 @@ $video->reserve('processing', '+30 minutes');
 
 The method returns `true` if the lock was acquired, or `false` if the model is already reserved with that key.
 
+## Duration Units
+
+Instead of calculating seconds, you can use Carbon's `Unit` enum or string units:
+
+```php
+use Carbon\Unit;
+
+// Using Carbon\Unit enum
+$video->reserve('processing', 5, Unit::Minute);
+$video->reserve('processing', 2, Unit::Hour);
+$video->reserve('processing', 1, Unit::Day);
+$video->reserve('processing', 1, Unit::Week);
+
+// Using string units (singular or plural)
+$video->reserve('processing', 5, 'minutes');
+$video->reserve('processing', 2, 'hours');
+$video->reserve('processing', 1, 'day');
+```
+
+Unit support works with all duration-accepting methods: `reserve()`, `blockingReserve()`, `reserveWhile()`, `extendReservation()`, and `reserveFor()` scope.
+
 ```php
 if ($video->reserve('processing')) {
     // Lock acquired, proceed with work
@@ -56,8 +77,11 @@ If you need to wait for a lock to become available:
 // Wait up to 10 seconds (default) for the lock
 $video->blockingReserve('processing', 60);
 
-// Wait up to 30 seconds for the lock
-$video->blockingReserve('processing', 60, 30);
+// Wait up to 30 seconds for the lock (note: unit parameter is 3rd, wait is 4th)
+$video->blockingReserve('processing', 60, null, 30);
+
+// With duration units
+$video->blockingReserve('processing', 5, Unit::Minute, 30);
 ```
 
 Returns `true` if the lock was acquired, `false` if the wait time expired without acquiring the lock.
@@ -106,6 +130,8 @@ $video->reserve('thumbnail-generation');
 $video->reserve('user:123:review');
 ```
 
+> **Note:** Colons (`:`) in keys are internally replaced with underscores (`_`) to avoid conflicts with the lock key format. This happens transparently—you can still use colons when reserving and checking, but the stored key will use underscores.
+
 ### Enum Keys
 
 Enums provide type safety and IDE autocompletion:
@@ -122,7 +148,26 @@ $video->reserve(JobType::Transcoding);
 $video->isReserved(JobType::Transcoding); // true
 ```
 
-The enum's `name` property is used as the key.
+For pure enums (UnitEnum), the enum's `name` property is used as the key.
+
+### Backed Enum Keys
+
+For backed enums, the backing **value** is used instead of the name:
+
+```php
+enum Status: string
+{
+    case Processing = 'proc';
+    case Uploading = 'upload';
+}
+
+$video->reserve(Status::Processing);
+
+// The backing value 'proc' is used, not 'Processing'
+$video->isReserved(Status::Processing); // true
+$video->isReserved('proc');             // true
+$video->isReserved('Processing');       // false
+```
 
 ### Object Keys
 
