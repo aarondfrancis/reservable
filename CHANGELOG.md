@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- MIT LICENSE file
+- `pint.json` for code style configuration
+- `laravel/pint` as dev dependency with `composer lint` script
+
+### Changed
+- Moved `Reservable` trait to `AaronFrancis\Reservable\Concerns\Reservable`
+- Moved `CacheLock` model to `AaronFrancis\Reservable\Models\CacheLock`
+- Refactored `ReservableServiceProvider` to use proper `register()` and `boot()` separation
+
 ## [0.1.0] - 2025-12-28
 
 ### Added
