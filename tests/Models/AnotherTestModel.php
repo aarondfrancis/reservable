@@ -2,7 +2,7 @@
 
 namespace AaronFrancis\Reservable\Tests\Models;
 
-use AaronFrancis\Reservable\Reservable;
+use AaronFrancis\Reservable\Concerns\Reservable;
 use Illuminate\Database\Eloquent\Model;
 
 class AnotherTestModel extends Model

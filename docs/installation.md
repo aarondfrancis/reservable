@@ -68,7 +68,7 @@ Add the `Reservable` trait to any model you want to make reservable:
 
 namespace App\Models;
 
-use AaronFrancis\Reservable\Reservable;
+use AaronFrancis\Reservable\Concerns\Reservable;
 use Illuminate\Database\Eloquent\Model;
 
 class Video extends Model

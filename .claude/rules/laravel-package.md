@@ -8,19 +8,49 @@ paths: "**/*.php"
 
 ```
 package-name/
+├── .github/
+│   ├── scripts/parse-changelog.sh
+│   └── workflows/
+│       ├── tests.yaml
+│       ├── pint.yaml
+│       └── release.yaml
 ├── config/package-name.php
-├── database/{factories,migrations}/
-├── resources/{lang,views}/
-├── routes/
+├── database/migrations/*.php.stub
+├── docs/
+│   ├── index.md
+│   ├── installation.md
+│   ├── configuration.md
+│   ├── usage.md
+│   ├── api-reference.md
+│   └── troubleshooting.md
 ├── src/
 │   ├── Commands/
-│   ├── Facades/
-│   └── PackageNameServiceProvider.php
+│   ├── Concerns/              # Traits
+│   ├── Contracts/             # Interfaces
+│   ├── Models/
+│   └── PackageServiceProvider.php
 ├── tests/
+│   ├── TestCase.php
+│   └── Fixtures/
 ├── composer.json
 ├── CHANGELOG.md
-└── README.md
+├── LICENSE
+├── README.md
+├── phpunit.xml.dist
+└── pint.json
 ```
+
+### README Badges
+
+```markdown
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/vendor/package.svg?style=flat-square)](https://packagist.org/packages/vendor/package)
+[![Tests](https://github.com/vendor/package/actions/workflows/tests.yaml/badge.svg)](https://github.com/vendor/package/actions/workflows/tests.yaml)
+[![Total Downloads](https://img.shields.io/packagist/dt/vendor/package.svg?style=flat-square)](https://packagist.org/packages/vendor/package)
+[![PHP Version](https://img.shields.io/packagist/php-v/vendor/package.svg?style=flat-square)](https://packagist.org/packages/vendor/package)
+[![License](https://img.shields.io/packagist/l/vendor/package.svg?style=flat-square)](https://packagist.org/packages/vendor/package)
+```
+
+**Note**: Shields.io caches responses. New packages may show "invalid response data" for a few minutes after first Packagist publish.
 
 ### composer.json
 
@@ -29,195 +59,446 @@ package-name/
     "name": "vendor/package-name",
     "require": {
         "php": "^8.2",
-        "illuminate/contracts": "^10.0|^11.0",
-        "illuminate/support": "^10.0|^11.0"
+        "illuminate/contracts": "^10.0|^11.0|^12.0",
+        "illuminate/support": "^10.0|^11.0|^12.0"
     },
     "require-dev": {
-        "orchestra/testbench": "^8.0|^9.0"
+        "laravel/pint": "^1.0",
+        "orchestra/testbench": "^8.0|^9.0|^10.0",
+        "pestphp/pest": "^3.0|^4.0"
     },
     "autoload": {
-        "psr-4": { "Vendor\\Package\\": "src/" }
+        "psr-4": { "Vendor\\Package\\": "src/" },
+        "files": ["src/helpers.php"]
     },
     "extra": {
         "laravel": {
-            "providers": ["Vendor\\Package\\PackageServiceProvider"],
-            "aliases": { "Package": "Vendor\\Package\\Facades\\Package" }
+            "providers": ["Vendor\\Package\\PackageServiceProvider"]
         }
+    },
+    "scripts": {
+        "test": "pest",
+        "lint": "pint"
     }
 }
 ```
+
+**Version Matrix** (Laravel 12, PHP 8.5, Pest 4 are released):
+| Laravel | PHP | Testbench |
+|---------|-----|-----------|
+| 10.x | 8.1+ | 8.x |
+| 11.x | 8.2+ | 9.x |
+| 12.x | 8.2+ | 10.x |
+
+**PHP Support**: 8.2, 8.3, 8.4, 8.5 (exclude 8.4/8.5 from Laravel 10)
 
 **Rules**:
 - Require `illuminate/*` packages, NEVER `laravel/framework`
-- Use `^10.0|^11.0` for multi-version support
-- Match PHP to lowest Laravel (L10=8.1+, L11=8.2+)
+- Use Pest for testing (not PHPUnit)
+- Include `pint.json` with `{"preset": "laravel"}`
 
-### Service Provider (spatie/laravel-package-tools)
+### Service Provider (Vanilla)
 
 ```php
-class PackageServiceProvider extends PackageServiceProvider
+class PackageServiceProvider extends ServiceProvider
 {
-    public function configurePackage(Package $package): void
+    public function register(): void
     {
-        $package
-            ->name('package-name')
-            ->hasConfigFile()
-            ->hasViews()
-            ->hasMigration('create_tables')
-            ->hasCommand(InstallCommand::class);
+        $this->mergeConfigFrom(__DIR__.'/../config/package.php', 'package');
+        $this->app->singleton(PackageService::class);
     }
 
-    public function packageRegistered(): void
+    public function boot(): void
     {
-        $this->app->bind(Contract::class, Implementation::class);
+        if ($this->app->runningInConsole()) {
+            $this->publishes([
+                __DIR__.'/../config/package.php' => config_path('package.php'),
+            ], 'package-config');
+
+            $this->publishesMigrations([
+                __DIR__.'/../database/migrations' => database_path('migrations'),
+            ], 'package-migrations');
+
+            $this->commands([PackageCommand::class]);
+        }
+
+        if (config('package.route.enabled', true)) {
+            $this->registerRoutes();
+        }
+    }
+
+    protected function registerRoutes(): void
+    {
+        Route::prefix(config('package.route.prefix', 'api'))
+            ->middleware(config('package.route.middleware', []))
+            ->group(fn() => $this->loadRoutesFrom(__DIR__.'/../routes/api.php'));
     }
 }
 ```
 
-**Method placement**:
+### Traits for Eloquent Models
 
-| `register()` / `packageRegistered()` | `boot()` / `packageBooted()` |
-|--------------------------------------|------------------------------|
-| Container bindings | Routes, views, translations |
-| Merge config | Publish files |
-| | Commands (wrap in `runningInConsole()`) |
+```php
+// src/Concerns/HasFeature.php
+namespace Vendor\Package\Concerns;
+
+trait HasFeature
+{
+    public function initializeHasFeature(): void
+    {
+        // Called on model boot
+    }
+
+    public function feature(): MorphMany
+    {
+        $model = config('package.model', \Vendor\Package\Models\Feature::class);
+        return $this->morphMany($model, 'featureable');
+    }
+
+    public function addFeature(BackedEnum $type, mixed $data = null): Model
+    {
+        return $this->feature()->create([
+            'type' => $type->value,
+            'data' => $data,
+        ]);
+    }
+
+    // Query scopes
+    public function scopeWithFeature($query, BackedEnum $type)
+    {
+        return $query->whereHas('feature', fn($q) => $q->where('type', $type->value));
+    }
+}
+```
+
+**Usage**: `use Vendor\Package\Concerns\HasFeature;`
+
+### Helper Functions
+
+```php
+// src/helpers.php
+if (!function_exists('package')) {
+    function package(string $source, string $path): UrlBuilder
+    {
+        return new UrlBuilder($source, $path);
+    }
+}
+```
+
+### Fluent URL/API Builders
+
+```php
+class UrlBuilder implements Htmlable, Stringable
+{
+    protected array $options = [];
+
+    public function __construct(protected string $source, protected string $path) {}
+
+    public function width(int $w): static { $this->options['w'] = $w; return $this; }
+    public function height(int $h): static { $this->options['h'] = $h; return $this; }
+    public function format(string $f): static { $this->options['f'] = $f; return $this; }
+
+    // Shortcut methods
+    public function webp(): static { return $this->format('webp'); }
+
+    public function url(): string
+    {
+        $opts = collect($this->options)->map(fn($v, $k) => "$k=$v")->implode(',');
+        return "/$opts/{$this->source}/{$this->path}";
+    }
+
+    public function toHtml(): string { return $this->url(); }
+    public function __toString(): string { return $this->url(); }
+}
+```
+
+**Blade usage**: `<img src="{{ package('images', 'photo.jpg')->width(400)->webp() }}">`
 
 ### Configuration
 
 ```php
-// config/package.php — NEVER use closures (breaks config:cache)
+// config/package.php
 return [
+    'route' => [
+        'enabled' => true,
+        'prefix' => null,
+        'middleware' => [],
+        'name' => 'package.show',
+    ],
     'model' => \Vendor\Package\Models\Item::class,
-    'table_name' => 'items',
-    'cache_ttl' => env('PACKAGE_CACHE_TTL', 3600),
+    'rate_limit' => [
+        'enabled' => true,
+        'max_attempts' => 10,
+    ],
+    'cache' => [
+        'max_age' => 2592000,        // 30 days
+        's_maxage' => 2592000,
+        'immutable' => true,
+    ],
 ];
 ```
 
-**Rules**:
-- Always provide defaults: `config('package.timeout', 30)`
-- Never `env()` in package code — use `config()`
-- `mergeConfigFrom()` only merges first-level arrays
+### Migration Stubs
 
-### Swappable Models
+Use `.php.stub` for publishable migrations:
 
 ```php
-// config
-'models' => ['item' => \Vendor\Package\Models\Item::class],
-
-// Model — configurable table
-public function getTable(): string {
-    return config('package.table_names.items', parent::getTable());
-}
-
-// Usage
-$modelClass = config('package.models.item');
-$items = $modelClass::query()->get();
-```
-
-Define contracts for replaceable models:
-```php
-interface Item { public function scopeActive($query); }
-```
-
-### Facades
-
-```php
-class PackageFacade extends Facade {
-    protected static function getFacadeAccessor(): string { return 'package-name'; }
-}
-
-// Register both facade accessor AND contract
-$this->app->singleton('package-name', fn($app) => new Service($app['config']['package']));
-$this->app->bind(PackageContract::class, fn($app) => $app->make('package-name'));
-```
-
-### Migrations
-
-```php
-// Publishable migrations
-$this->publishesMigrations([
-    __DIR__.'/../database/migrations' => database_path('migrations'),
-], 'package-migrations');
-
-// Configurable table names in migration
-Schema::create(config('package.table_names.items'), function (Blueprint $table) {});
-```
-
-### Testing (Orchestra Testbench)
-
-```php
-abstract class TestCase extends \Orchestra\Testbench\TestCase
+// database/migrations/create_items_table.php.stub
+return new class extends Migration
 {
-    protected function getPackageProviders($app): array {
-        return [PackageServiceProvider::class];
-    }
+    public function up(): void
+    {
+        Schema::create(config('package.table', 'items'), function (Blueprint $table) {
+            $table->id();
+            $table->morphs('itemable');
+            $table->string('type');
+            $table->json('data')->nullable();
+            $table->timestamps();
 
-    protected function getEnvironmentSetUp($app): void {
-        $app['config']->set('database.default', 'testing');
-        $app['config']->set('database.connections.testing', [
-            'driver' => 'sqlite', 'database' => ':memory:',
-        ]);
+            $table->index(['itemable_id', 'itemable_type']);
+        });
     }
-
-    protected function defineDatabaseMigrations(): void {
-        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
-    }
-}
+};
 ```
 
-### GitHub Actions CI
-
-```yaml
-strategy:
-  matrix:
-    php: [8.2, 8.3]
-    laravel: [10.*, 11.*]
-    include:
-      - laravel: 10.*
-        testbench: 8.*
-      - laravel: 11.*
-        testbench: 9.*
-steps:
-  - run: composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-update
-  - run: composer update --prefer-stable
-  - run: vendor/bin/phpunit
-```
-
-### Blade Components
+### Artisan Commands
 
 ```php
-// Register
-Blade::componentNamespace('Vendor\\Package\\Components', 'package');
+class PackageCommand extends Command
+{
+    protected $signature = 'package:process
+        {--list : List items without processing}
+        {--pretend : Show what would be processed}
+        {--dry-run : Alias for --pretend}';
 
-// Usage
-<x-package::alert type="warning" />
-return view('package::dashboard');
-```
+    public function handle(): int
+    {
+        if ($this->option('list')) {
+            return $this->listItems();
+        }
 
-### Install Command
+        $pretend = $this->option('pretend') || $this->option('dry-run');
 
-```php
-class InstallCommand extends Command {
-    protected $signature = 'package:install';
+        foreach ($this->discoverItems() as $item) {
+            if ($pretend) {
+                $this->line("Would process: {$item->name}");
+                continue;
+            }
+            $this->processItem($item);
+            $this->info("Processed: {$item->name}");
+        }
 
-    public function handle(): int {
-        $this->call('vendor:publish', ['--tag' => 'package-config']);
-        if ($this->confirm('Run migrations?', true)) $this->call('migrate');
         return self::SUCCESS;
     }
 }
 ```
 
-### Factories
+### Testing (Pest + Testbench)
 
 ```php
-// Model
-protected static function newFactory() {
-    return \Vendor\Package\Database\Factories\ItemFactory::new();
+// tests/TestCase.php
+abstract class TestCase extends \Orchestra\Testbench\TestCase
+{
+    protected function getPackageProviders($app): array
+    {
+        return [PackageServiceProvider::class];
+    }
+
+    protected function defineEnvironment($app): void
+    {
+        $app['config']->set('app.timezone', 'UTC');
+        $app['config']->set('database.default', 'testing');
+        $app['config']->set('database.connections.testing', [
+            'driver' => 'sqlite',
+            'database' => ':memory:',
+        ]);
+    }
+
+    protected function defineDatabaseMigrations(): void
+    {
+        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+    }
+}
+```
+
+```php
+// tests/FeatureTest.php
+uses(TestCase::class);
+
+it('processes items correctly', function () {
+    $item = Item::factory()->create();
+
+    $result = $item->process();
+
+    expect($result)->toBeTrue();
+});
+```
+
+### GitHub Actions
+
+**tests.yaml**:
+```yaml
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3', '8.4', '8.5']
+        laravel: ['10.*', '11.*', '12.*']
+        include:
+          - laravel: '10.*'
+            testbench: '8.*'
+          - laravel: '11.*'
+            testbench: '9.*'
+          - laravel: '12.*'
+            testbench: '10.*'
+        exclude:
+          - php: '8.4'
+            laravel: '10.*'
+          - php: '8.5'
+            laravel: '10.*'
+          - php: '8.5'
+            laravel: '11.*'
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - run: |
+          composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-update
+          composer update --prefer-stable --no-interaction
+
+      - run: vendor/bin/pest
+```
+
+**pint.yaml** (auto-fix):
+```yaml
+name: Fix Code Style
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  pint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+
+      - run: composer install --no-interaction --prefer-dist
+      - run: vendor/bin/pint
+
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: Fix code style
+```
+
+**release.yaml**: Use `/create-release-workflow` command
+
+**Workflow rules**:
+- Keep `tests.yaml` and `pint.yaml` as separate workflows, not one combined "CI" workflow
+- Release workflow should call/require test and lint workflows, not duplicate their steps
+
+### CHANGELOG.md (Keep a Changelog)
+
+```markdown
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+- Initial release
+
+[Unreleased]: https://github.com/vendor/package/compare/HEAD
+```
+
+### Path Validation (Security)
+
+```php
+class PathValidator
+{
+    public static function directories(array $allowed): Closure
+    {
+        return fn(string $path) => Str::startsWith($path, $allowed);
+    }
+
+    public static function extensions(array $allowed): Closure
+    {
+        return fn(string $path) => in_array(pathinfo($path, PATHINFO_EXTENSION), $allowed);
+    }
 }
 
-// composer.json autoload
-"Vendor\\Package\\Database\\Factories\\": "database/factories/"
+// In service
+public function resolve(string $path): void
+{
+    if (str_contains($path, '..')) {
+        throw new InvalidPathException('Directory traversal not allowed');
+    }
+
+    $validator = config('package.validator');
+    if ($validator && !$validator($path)) {
+        throw new InvalidPathException('Path validation failed');
+    }
+}
+```
+
+### Common Patterns
+
+**Interface-based discovery** (like Enqueue):
+```php
+interface Processable {
+    public static function process(): void;
+    public static function shouldProcess(CallbackEvent $event): CallbackEvent|bool;
+}
+```
+
+**Enum-based types** (like Eventable):
+```php
+// config: 'types' => ['user' => UserType::class]
+class TypeRegistry {
+    public static function getAlias(BackedEnum $enum): string { }
+    public static function getClass(string $alias): string { }
+}
+```
+
+**Prune/cleanup commands**:
+```php
+interface Pruneable {
+    public function prune(): ?PruneConfig;
+}
+
+class PruneConfig {
+    public function __construct(
+        public ?Carbon $before = null,
+        public ?int $keep = null,
+    ) {}
+}
 ```
 
 ### Versioning (SemVer)
@@ -226,40 +507,16 @@ protected static function newFactory() {
 - **MINOR**: New features, backward-compatible
 - **PATCH**: Bug fixes only
 
-**Breaking changes**: Remove/rename public methods, change signatures, change config structure, change DB schema, drop version support
-
-### Extension Points
-
-**Events** for key actions:
-```php
-event(new ItemProcessed($item, $results));
-```
-
-**Action classes** for swappable logic:
-```php
-// config
-'actions' => ['process' => ProcessAction::class],
-
-// Usage
-app(config('package.actions.process'))->execute($item);
-```
-
-**Macros** with unique names:
-```php
-Collection::macro('toUpperKeys', fn() => $this->mapWithKeys(fn($v, $k) => [strtoupper($k) => $v]));
-```
-
 ### Common Mistakes
 
 | Mistake | Fix |
 |---------|-----|
 | `use App\Models\User` | `config('package.user_model')` |
 | `env('KEY')` in code | `config('package.key')` |
-| Hardcoded paths | `storage_path()`, `config_path()` |
-| `$this->app->bind('user', ...)` | Namespaced: `'vendor.package.user'` |
-| Closures in config | Class references |
-| Publishing all in one tag | Separate: `config`, `migrations`, `views` |
-| Assuming auth structure | Check existence, use interfaces |
-| No default config values | Always `config('key', 'default')` |
 | `laravel/framework` require | `illuminate/*` packages only |
-| `final class` on extendable | Allow extension |
+| PHPUnit directly | Use Pest with Testbench |
+| No CHANGELOG.md | Keep a Changelog format |
+| `--test` in release CI | Auto-fix + commit pattern |
+| Hardcoded table names | `config('package.table')` |
+| No route toggle | `'route.enabled' => true` config |
+| Missing --pretend flag | Add for destructive commands |

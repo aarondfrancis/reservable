@@ -10,5 +10,5 @@ return [
     | have the generated columns that parse the reservation key format.
     |
     */
-    'model' => AaronFrancis\Reservable\CacheLock::class,
+    'model' => AaronFrancis\Reservable\Models\CacheLock::class,
 ];

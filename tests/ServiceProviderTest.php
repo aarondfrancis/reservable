@@ -8,13 +8,13 @@ describe('config handling', function () {
 
         expect($config)->toBeArray();
         expect($config)->toHaveKey('model');
-        expect($config['model'])->toBe(\AaronFrancis\Reservable\CacheLock::class);
+        expect($config['model'])->toBe(\AaronFrancis\Reservable\Models\CacheLock::class);
     });
 
     it('has correct default model class', function () {
         $modelClass = config('reservable.model');
 
-        expect($modelClass)->toBe(\AaronFrancis\Reservable\CacheLock::class);
+        expect($modelClass)->toBe(\AaronFrancis\Reservable\Models\CacheLock::class);
         expect(class_exists($modelClass))->toBeTrue();
     });
 });
