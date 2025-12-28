@@ -820,7 +820,7 @@ describe('duration units', function () {
         $expectedExpiration = Carbon::now()->timestamp + 300;
         expect($reservation->expiration)->toBeGreaterThanOrEqual($expectedExpiration - 1);
         expect($reservation->expiration)->toBeLessThanOrEqual($expectedExpiration + 1);
-    });
+    })->skip(! class_exists(Unit::class), 'Carbon\Unit enum requires Carbon 3.0+');
 
     it('reserve accepts Carbon Unit::Hour', function () {
         $this->model->reserve('processing', 2, Unit::Hour);
@@ -829,7 +829,7 @@ describe('duration units', function () {
         $expectedExpiration = Carbon::now()->timestamp + 7200;
         expect($reservation->expiration)->toBeGreaterThanOrEqual($expectedExpiration - 1);
         expect($reservation->expiration)->toBeLessThanOrEqual($expectedExpiration + 1);
-    });
+    })->skip(! class_exists(Unit::class), 'Carbon\Unit enum requires Carbon 3.0+');
 
     it('blockingReserve accepts Carbon Unit enum', function () {
         $result = $this->model->blockingReserve('processing', 5, Unit::Minute, 1);
@@ -840,7 +840,7 @@ describe('duration units', function () {
         $expectedExpiration = Carbon::now()->timestamp + 300;
         expect($reservation->expiration)->toBeGreaterThanOrEqual($expectedExpiration - 1);
         expect($reservation->expiration)->toBeLessThanOrEqual($expectedExpiration + 1);
-    });
+    })->skip(! class_exists(Unit::class), 'Carbon\Unit enum requires Carbon 3.0+');
 
     it('reserveWhile accepts Carbon Unit enum', function () {
         $result = $this->model->reserveWhile('processing', 5, Unit::Minute, function ($model) {
@@ -848,7 +848,7 @@ describe('duration units', function () {
         });
 
         expect($result)->toBe('success');
-    });
+    })->skip(! class_exists(Unit::class), 'Carbon\Unit enum requires Carbon 3.0+');
 
     it('extendReservation accepts Carbon Unit enum', function () {
         $this->model->reserve('processing', 1, Unit::Minute);
@@ -861,7 +861,7 @@ describe('duration units', function () {
         $expectedExpiration = Carbon::now()->timestamp + 600;
         expect($reservation->expiration)->toBeGreaterThanOrEqual($expectedExpiration - 1);
         expect($reservation->expiration)->toBeLessThanOrEqual($expectedExpiration + 1);
-    });
+    })->skip(! class_exists(Unit::class), 'Carbon\Unit enum requires Carbon 3.0+');
 
     it('scopeReserveFor accepts Carbon Unit enum', function () {
         $models = TestModel::reserveFor('worker-1', 5, Unit::Minute)->get();
@@ -872,7 +872,7 @@ describe('duration units', function () {
         $expectedExpiration = Carbon::now()->timestamp + 300;
         expect($reservation->expiration)->toBeGreaterThanOrEqual($expectedExpiration - 1);
         expect($reservation->expiration)->toBeLessThanOrEqual($expectedExpiration + 1);
-    });
+    })->skip(! class_exists(Unit::class), 'Carbon\Unit enum requires Carbon 3.0+');
 });
 
 enum TestEnum
