@@ -168,3 +168,9 @@ fatal: 'main' is already checked out at '/Users/aaron/Code/reservable'
 [2025-12-28 11:53:51] Import triggered by file change
 [2025-12-28 11:53:51] Starting auto-import...
 [2025-12-28 11:53:51] Skipping auto-import: JSONL content unchanged
+[2025-12-28 11:56:24] JSONL removed/renamed, re-establishing watch
+[2025-12-28 11:56:24] Successfully re-established JSONL watch after 50ms
+[2025-12-28 11:56:24] JSONL file created: /Users/aaron/Code/reservable/.beads/issues.jsonl
+[2025-12-28 11:56:25] Import triggered by file change
+[2025-12-28 11:56:25] Starting auto-import...
+[2025-12-28 11:56:25] Skipping auto-import: JSONL content unchanged
