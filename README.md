@@ -62,9 +62,9 @@ $video->reserve('processing', 300); // 5 minutes
 // Reserve until a specific time
 $video->reserve('processing', now()->addHour());
 
-// Reserve with Laravel's interval helpers
-$video->reserve('processing', minutes(5));
-$video->reserve('processing', hours(2));
+// Reserve with CarbonInterval
+$video->reserve('processing', CarbonInterval::minutes(5));
+$video->reserve('processing', CarbonInterval::hours(2));
 ```
 
 The `reserve()` method returns `true` if the lock was acquired, or `false` if the model is already reserved.
@@ -94,8 +94,8 @@ $video->blockingReserve('processing', duration: 60);
 // Wait up to 30 seconds
 $video->blockingReserve('processing', duration: 60, wait: 30);
 
-// With interval helpers
-$video->blockingReserve('processing', minutes(5), wait: 30);
+// With CarbonInterval
+$video->blockingReserve('processing', CarbonInterval::minutes(5), wait: 30);
 ```
 
 Returns `true` if the lock was acquired, `false` if the wait time expired.

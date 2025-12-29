@@ -68,11 +68,11 @@ trait Reservable
      * // Reserve for 5 minutes using seconds
      * $model->reserve('processing', 300);
      * @example
-     * // Reserve for 5 minutes using Laravel's interval helpers
-     * $model->reserve('processing', minutes(5));
+     * // Reserve for 5 minutes using CarbonInterval
+     * $model->reserve('processing', CarbonInterval::minutes(5));
      * @example
-     * // Reserve for 2 hours using interval helpers
-     * $model->reserve('processing', hours(2));
+     * // Reserve for 2 hours using CarbonInterval
+     * $model->reserve('processing', CarbonInterval::hours(2));
      * @example
      * // Reserve until a specific time
      * $model->reserve('processing', now()->addHour());
@@ -103,12 +103,12 @@ trait Reservable
      * }
      * @example
      * // Wait up to 30 seconds for a 5-minute reservation
-     * if ($model->blockingReserve('processing', minutes(5), 30)) {
+     * if ($model->blockingReserve('processing', CarbonInterval::minutes(5), 30)) {
      *     // Process...
      * }
      * @example
      * // Wait up to 30 seconds for a 2-hour reservation
-     * if ($model->blockingReserve('processing', hours(2), 30)) {
+     * if ($model->blockingReserve('processing', CarbonInterval::hours(2), 30)) {
      *     // Process...
      * }
      */
@@ -138,7 +138,7 @@ trait Reservable
      *     return $model->process();
      * });
      * @example
-     * $result = $model->reserveWhile('processing', minutes(5), function ($model) {
+     * $result = $model->reserveWhile('processing', CarbonInterval::minutes(5), function ($model) {
      *     return $model->process();
      * });
      */
@@ -168,7 +168,7 @@ trait Reservable
      * $model->extendReservation('processing', 300);
      * @example
      * // Extend by 5 minutes using interval helpers
-     * $model->extendReservation('processing', minutes(5));
+     * $model->extendReservation('processing', CarbonInterval::minutes(5));
      * @example
      * // Extend until a specific time
      * $model->extendReservation('processing', now()->addHour());
@@ -331,7 +331,7 @@ trait Reservable
      * $jobs = Job::reserveFor('worker-1', 120)->limit(10)->get();
      * @example
      * // Get up to 10 unreserved jobs and reserve them for 5 minutes
-     * $jobs = Job::reserveFor('worker-1', minutes(5))->limit(10)->get();
+     * $jobs = Job::reserveFor('worker-1', CarbonInterval::minutes(5))->limit(10)->get();
      */
     public function scopeReserveFor(Builder $query, mixed $key, int|DateInterval|Carbon $duration = self::DEFAULT_RESERVATION_DURATION): void
     {

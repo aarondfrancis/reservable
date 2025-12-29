@@ -17,23 +17,20 @@ $video->reserve('processing', now()->addHour());
 
 The method returns `true` if the lock was acquired, or `false` if the model is already reserved with that key.
 
-## Interval Helpers
+## Duration Intervals
 
-Instead of calculating seconds, use Laravel's interval helper functions:
+Instead of calculating seconds, use `CarbonInterval`:
 
 ```php
-use function Illuminate\Support\minutes;
-use function Illuminate\Support\hours;
-use function Illuminate\Support\days;
-use function Illuminate\Support\weeks;
+use Carbon\CarbonInterval;
 
-$video->reserve('processing', minutes(5));
-$video->reserve('processing', hours(2));
-$video->reserve('processing', days(1));
-$video->reserve('processing', weeks(1));
+$video->reserve('processing', CarbonInterval::minutes(5));
+$video->reserve('processing', CarbonInterval::hours(2));
+$video->reserve('processing', CarbonInterval::days(1));
+$video->reserve('processing', CarbonInterval::weeks(1));
 ```
 
-These helpers return `DateInterval` objects and work with all duration-accepting methods: `reserve()`, `blockingReserve()`, `reserveWhile()`, `extendReservation()`, and `reserveFor()` scope.
+These return `DateInterval` objects and work with all duration-accepting methods: `reserve()`, `blockingReserve()`, `reserveWhile()`, `extendReservation()`, and `reserveFor()` scope.
 
 ```php
 if ($video->reserve('processing')) {
@@ -74,8 +71,8 @@ $video->blockingReserve('processing', 60);
 // Wait up to 30 seconds for the lock
 $video->blockingReserve('processing', 60, 30);
 
-// With interval helpers
-$video->blockingReserve('processing', minutes(5), 30);
+// With CarbonInterval
+$video->blockingReserve('processing', CarbonInterval::minutes(5), 30);
 ```
 
 Returns `true` if the lock was acquired, `false` if the wait time expired without acquiring the lock.

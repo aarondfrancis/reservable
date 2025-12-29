@@ -29,10 +29,10 @@ $video->reserve('processing');           // 60 seconds
 $video->reserve('processing', 300);      // 5 minutes in seconds
 $video->reserve('processing', now()->addHour());
 
-// Using Laravel's interval helpers
-$video->reserve('processing', minutes(5));
-$video->reserve('processing', hours(2));
-$video->reserve('processing', days(1));
+// Using CarbonInterval
+$video->reserve('processing', CarbonInterval::minutes(5));
+$video->reserve('processing', CarbonInterval::hours(2));
+$video->reserve('processing', CarbonInterval::days(1));
 ```
 
 ---
@@ -100,9 +100,9 @@ Wait for a lock to become available instead of failing immediately.
 ```php
 $video->blockingReserve('processing', 60, 30); // Wait up to 30 seconds
 
-// Using Laravel's interval helpers
-$video->blockingReserve('processing', minutes(5), 30);
-$video->blockingReserve('processing', hours(2), 30);
+// Using CarbonInterval
+$video->blockingReserve('processing', CarbonInterval::minutes(5), 30);
+$video->blockingReserve('processing', CarbonInterval::hours(2), 30);
 ```
 
 ---
@@ -132,8 +132,8 @@ $result = $video->reserveWhile('processing', 300, function ($video) {
     return $video->transcode();
 });
 
-// Using Laravel's interval helpers
-$result = $video->reserveWhile('processing', minutes(5), function ($video) {
+// Using CarbonInterval
+$result = $video->reserveWhile('processing', CarbonInterval::minutes(5), function ($video) {
     return $video->transcode();
 });
 ```
@@ -163,9 +163,9 @@ $video->reserve('processing', 60);
 // ... work takes longer than expected ...
 $video->extendReservation('processing', 60); // Add 60 more seconds
 
-// Using Laravel's interval helpers
-$video->extendReservation('processing', minutes(5));
-$video->extendReservation('processing', hours(1));
+// Using CarbonInterval
+$video->extendReservation('processing', CarbonInterval::minutes(5));
+$video->extendReservation('processing', CarbonInterval::hours(1));
 ```
 
 ---
@@ -222,8 +222,8 @@ Find unreserved models and atomically reserve them. Models that fail to reserve 
 ```php
 $videos = Video::reserveFor('processing', 300)->limit(5)->get();
 
-// Using Laravel's interval helpers
-$videos = Video::reserveFor('processing', minutes(5))->limit(5)->get();
+// Using CarbonInterval
+$videos = Video::reserveFor('processing', CarbonInterval::minutes(5))->limit(5)->get();
 ```
 
 ---
