@@ -4,12 +4,7 @@ use AaronFrancis\Reservable\Tests\Models\AnotherTestModel;
 use AaronFrancis\Reservable\Tests\Models\TestModel;
 use Carbon\Carbon;
 use Carbon\CarbonInterval;
-
-use function Illuminate\Support\days;
-use function Illuminate\Support\hours;
-use function Illuminate\Support\minutes;
-use function Illuminate\Support\seconds;
-use function Illuminate\Support\weeks;
+use DateInterval;
 
 beforeEach(function () {
     $this->model = TestModel::create(['name' => 'Test']);
@@ -85,7 +80,7 @@ describe('duration handling', function () {
     });
 
     it('accepts DateInterval', function () {
-        $result = $this->model->reserve('processing', minutes(5));
+        $result = $this->model->reserve('processing', new DateInterval('PT5M'));
 
         expect($result)->toBeTrue();
     });
@@ -485,7 +480,7 @@ describe('extendReservation', function () {
     it('accepts interval duration', function () {
         $this->model->reserve('processing', 10);
 
-        $result = $this->model->extendReservation('processing', minutes(5));
+        $result = $this->model->extendReservation('processing', CarbonInterval::minutes(5));
 
         expect($result)->toBeTrue();
     });
@@ -682,8 +677,8 @@ describe('edge case coverage', function () {
 });
 
 describe('interval helpers', function () {
-    it('reserve accepts minutes() interval', function () {
-        $this->model->reserve('processing', minutes(5));
+    it('reserve accepts minutes interval', function () {
+        $this->model->reserve('processing', CarbonInterval::minutes(5));
 
         expect($this->model->isReserved('processing'))->toBeTrue();
 
@@ -693,8 +688,8 @@ describe('interval helpers', function () {
         expect($reservation->expiration)->toBeLessThanOrEqual($expectedExpiration + 1);
     });
 
-    it('reserve accepts hours() interval', function () {
-        $this->model->reserve('processing', hours(2));
+    it('reserve accepts hours interval', function () {
+        $this->model->reserve('processing', CarbonInterval::hours(2));
 
         expect($this->model->isReserved('processing'))->toBeTrue();
 
@@ -704,8 +699,8 @@ describe('interval helpers', function () {
         expect($reservation->expiration)->toBeLessThanOrEqual($expectedExpiration + 1);
     });
 
-    it('reserve accepts days() interval', function () {
-        $this->model->reserve('processing', days(1));
+    it('reserve accepts days interval', function () {
+        $this->model->reserve('processing', CarbonInterval::days(1));
 
         expect($this->model->isReserved('processing'))->toBeTrue();
 
@@ -715,8 +710,8 @@ describe('interval helpers', function () {
         expect($reservation->expiration)->toBeLessThanOrEqual($expectedExpiration + 1);
     });
 
-    it('reserve accepts weeks() interval', function () {
-        $this->model->reserve('processing', weeks(1));
+    it('reserve accepts weeks interval', function () {
+        $this->model->reserve('processing', CarbonInterval::weeks(1));
 
         expect($this->model->isReserved('processing'))->toBeTrue();
 
@@ -726,8 +721,8 @@ describe('interval helpers', function () {
         expect($reservation->expiration)->toBeLessThanOrEqual($expectedExpiration + 1);
     });
 
-    it('reserve accepts seconds() interval', function () {
-        $this->model->reserve('processing', seconds(120));
+    it('reserve accepts seconds interval', function () {
+        $this->model->reserve('processing', CarbonInterval::seconds(120));
 
         expect($this->model->isReserved('processing'))->toBeTrue();
 
@@ -738,7 +733,7 @@ describe('interval helpers', function () {
     });
 
     it('blockingReserve accepts interval', function () {
-        $result = $this->model->blockingReserve('processing', minutes(5), 1);
+        $result = $this->model->blockingReserve('processing', CarbonInterval::minutes(5), 1);
 
         expect($result)->toBeTrue();
 
@@ -751,7 +746,7 @@ describe('interval helpers', function () {
     it('reserveWhile accepts interval', function () {
         $callbackExecuted = false;
 
-        $result = $this->model->reserveWhile('processing', minutes(5), function ($model) use (&$callbackExecuted) {
+        $result = $this->model->reserveWhile('processing', CarbonInterval::minutes(5), function ($model) use (&$callbackExecuted) {
             $callbackExecuted = true;
 
             return 'success';
@@ -762,9 +757,9 @@ describe('interval helpers', function () {
     });
 
     it('extendReservation accepts interval', function () {
-        $this->model->reserve('processing', minutes(1));
+        $this->model->reserve('processing', CarbonInterval::minutes(1));
 
-        $result = $this->model->extendReservation('processing', minutes(5));
+        $result = $this->model->extendReservation('processing', CarbonInterval::minutes(5));
 
         expect($result)->toBeTrue();
 
@@ -775,7 +770,7 @@ describe('interval helpers', function () {
     });
 
     it('scopeReserveFor accepts interval', function () {
-        $models = TestModel::reserveFor('worker-1', minutes(5))->get();
+        $models = TestModel::reserveFor('worker-1', CarbonInterval::minutes(5))->get();
 
         expect($models)->toHaveCount(1);
 
