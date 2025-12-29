@@ -13,33 +13,27 @@ $video->reserve('processing', 300); // 5 minutes
 
 // Reserve until a specific time
 $video->reserve('processing', now()->addHour());
-
-// Reserve with a string date expression
-$video->reserve('processing', '+30 minutes');
 ```
 
 The method returns `true` if the lock was acquired, or `false` if the model is already reserved with that key.
 
-## Duration Units
+## Interval Helpers
 
-Instead of calculating seconds, you can use Carbon's `Unit` enum or string units:
+Instead of calculating seconds, use Laravel's interval helper functions:
 
 ```php
-use Carbon\Unit;
+use function Illuminate\Support\minutes;
+use function Illuminate\Support\hours;
+use function Illuminate\Support\days;
+use function Illuminate\Support\weeks;
 
-// Using Carbon\Unit enum
-$video->reserve('processing', 5, Unit::Minute);
-$video->reserve('processing', 2, Unit::Hour);
-$video->reserve('processing', 1, Unit::Day);
-$video->reserve('processing', 1, Unit::Week);
-
-// Using string units (singular or plural)
-$video->reserve('processing', 5, 'minutes');
-$video->reserve('processing', 2, 'hours');
-$video->reserve('processing', 1, 'day');
+$video->reserve('processing', minutes(5));
+$video->reserve('processing', hours(2));
+$video->reserve('processing', days(1));
+$video->reserve('processing', weeks(1));
 ```
 
-Unit support works with all duration-accepting methods: `reserve()`, `blockingReserve()`, `reserveWhile()`, `extendReservation()`, and `reserveFor()` scope.
+These helpers return `DateInterval` objects and work with all duration-accepting methods: `reserve()`, `blockingReserve()`, `reserveWhile()`, `extendReservation()`, and `reserveFor()` scope.
 
 ```php
 if ($video->reserve('processing')) {
@@ -77,11 +71,11 @@ If you need to wait for a lock to become available:
 // Wait up to 10 seconds (default) for the lock
 $video->blockingReserve('processing', 60);
 
-// Wait up to 30 seconds for the lock (note: unit parameter is 3rd, wait is 4th)
-$video->blockingReserve('processing', 60, null, 30);
+// Wait up to 30 seconds for the lock
+$video->blockingReserve('processing', 60, 30);
 
-// With duration units
-$video->blockingReserve('processing', 5, Unit::Minute, 30);
+// With interval helpers
+$video->blockingReserve('processing', minutes(5), 30);
 ```
 
 Returns `true` if the lock was acquired, `false` if the wait time expired without acquiring the lock.
