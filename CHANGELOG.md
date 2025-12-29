@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Duration parameters now accept `int`, `DateInterval`, or `Carbon` instead of separate `$duration` and `$unit` arguments
+- Use `CarbonInterval::minutes(5)` instead of `minutes(5)` helper (compatible with Laravel 11+)
+
 ## [0.1.1] - 2025-12-28
 
 ### Added
