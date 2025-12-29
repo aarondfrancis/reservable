@@ -56,18 +56,15 @@ class Video extends Model
 // Reserve for 60 seconds (default)
 $video->reserve('processing');
 
-// Reserve for a specific duration
+// Reserve for a specific duration in seconds
 $video->reserve('processing', 300); // 5 minutes
 
 // Reserve until a specific time
 $video->reserve('processing', now()->addHour());
 
-// Reserve with a string date
-$video->reserve('processing', '+30 minutes');
-
-// Reserve with duration units (Carbon\Unit enum or string)
-$video->reserve('processing', 5, Unit::Minute);
-$video->reserve('processing', 2, 'hours');
+// Reserve with Laravel's interval helpers
+$video->reserve('processing', minutes(5));
+$video->reserve('processing', hours(2));
 ```
 
 The `reserve()` method returns `true` if the lock was acquired, or `false` if the model is already reserved.
@@ -97,8 +94,8 @@ $video->blockingReserve('processing', duration: 60);
 // Wait up to 30 seconds
 $video->blockingReserve('processing', duration: 60, wait: 30);
 
-// With duration units
-$video->blockingReserve('processing', 5, Unit::Minute, wait: 30);
+// With interval helpers
+$video->blockingReserve('processing', minutes(5), wait: 30);
 ```
 
 Returns `true` if the lock was acquired, `false` if the wait time expired.

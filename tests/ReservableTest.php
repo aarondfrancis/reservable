@@ -3,7 +3,13 @@
 use AaronFrancis\Reservable\Tests\Models\AnotherTestModel;
 use AaronFrancis\Reservable\Tests\Models\TestModel;
 use Carbon\Carbon;
-use Carbon\Unit;
+use Carbon\CarbonInterval;
+
+use function Illuminate\Support\days;
+use function Illuminate\Support\hours;
+use function Illuminate\Support\minutes;
+use function Illuminate\Support\seconds;
+use function Illuminate\Support\weeks;
 
 beforeEach(function () {
     $this->model = TestModel::create(['name' => 'Test']);
@@ -78,8 +84,14 @@ describe('duration handling', function () {
         expect($result)->toBeTrue();
     });
 
-    it('accepts string date', function () {
-        $result = $this->model->reserve('processing', '+5 minutes');
+    it('accepts DateInterval', function () {
+        $result = $this->model->reserve('processing', minutes(5));
+
+        expect($result)->toBeTrue();
+    });
+
+    it('accepts CarbonInterval', function () {
+        $result = $this->model->reserve('processing', CarbonInterval::minutes(5));
 
         expect($result)->toBeTrue();
     });
@@ -407,7 +419,7 @@ describe('reserveWhile callback', function () {
 
 describe('blockingReserve', function () {
     it('acquires lock immediately when available', function () {
-        $result = $this->model->blockingReserve('processing', 60, null, 1);
+        $result = $this->model->blockingReserve('processing', 60, 1);
 
         expect($result)->toBeTrue();
         expect($this->model->isReserved('processing'))->toBeTrue();
@@ -417,7 +429,7 @@ describe('blockingReserve', function () {
         $this->model->reserve('processing', 60);
 
         // Should wait up to 1 second but fail
-        $result = $this->model->blockingReserve('processing', 60, null, 1);
+        $result = $this->model->blockingReserve('processing', 60, 1);
 
         expect($result)->toBeFalse();
     });
@@ -470,10 +482,10 @@ describe('extendReservation', function () {
         expect($result)->toBeTrue();
     });
 
-    it('accepts string duration', function () {
+    it('accepts interval duration', function () {
         $this->model->reserve('processing', 10);
 
-        $result = $this->model->extendReservation('processing', '+5 minutes');
+        $result = $this->model->extendReservation('processing', minutes(5));
 
         expect($result)->toBeTrue();
     });
@@ -628,25 +640,6 @@ describe('edge case coverage', function () {
         });
     });
 
-    describe('invalid duration strings', function () {
-        it('throws exception for invalid Carbon string', function () {
-            expect(fn () => $this->model->reserve('processing', 'not-a-date'))
-                ->toThrow(\Carbon\Exceptions\InvalidFormatException::class);
-        });
-
-        it('throws exception for malformed date string', function () {
-            expect(fn () => $this->model->reserve('processing', 'invalid-date-format'))
-                ->toThrow(\Carbon\Exceptions\InvalidFormatException::class);
-        });
-
-        it('handles valid relative date strings', function () {
-            $result = $this->model->reserve('processing', '+1 hour');
-
-            expect($result)->toBeTrue();
-            expect($this->model->isReserved('processing'))->toBeTrue();
-        });
-    });
-
     describe('concurrent blocking reserve', function () {
         it('returns false quickly when lock is held and wait expires', function () {
             // First acquire the lock
@@ -654,7 +647,7 @@ describe('edge case coverage', function () {
 
             // Measure time for blocking reserve to fail
             $startTime = microtime(true);
-            $result = $this->model->blockingReserve('processing', 60, null, 1);
+            $result = $this->model->blockingReserve('processing', 60, 1);
             $elapsedTime = microtime(true) - $startTime;
 
             expect($result)->toBeFalse();
@@ -668,7 +661,7 @@ describe('edge case coverage', function () {
             $this->model->reserve('processing', 60);
 
             $startTime = microtime(true);
-            $result = $this->model->blockingReserve('processing', 60, null, 0);
+            $result = $this->model->blockingReserve('processing', 60, 0);
             $elapsedTime = microtime(true) - $startTime;
 
             expect($result)->toBeFalse();
@@ -678,7 +671,7 @@ describe('edge case coverage', function () {
 
         it('acquires lock immediately when available with short wait', function () {
             $startTime = microtime(true);
-            $result = $this->model->blockingReserve('processing', 60, null, 5);
+            $result = $this->model->blockingReserve('processing', 60, 5);
             $elapsedTime = microtime(true) - $startTime;
 
             expect($result)->toBeTrue();
@@ -688,21 +681,20 @@ describe('edge case coverage', function () {
     });
 });
 
-describe('duration units', function () {
-    it('reserve accepts minutes unit', function () {
-        $this->model->reserve('processing', 5, 'minutes');
+describe('interval helpers', function () {
+    it('reserve accepts minutes() interval', function () {
+        $this->model->reserve('processing', minutes(5));
 
         expect($this->model->isReserved('processing'))->toBeTrue();
 
-        // Verify duration is 5 minutes (300 seconds) by checking the expiration
         $reservation = $this->model->reservations()->first();
         $expectedExpiration = Carbon::now()->timestamp + 300;
         expect($reservation->expiration)->toBeGreaterThanOrEqual($expectedExpiration - 1);
         expect($reservation->expiration)->toBeLessThanOrEqual($expectedExpiration + 1);
     });
 
-    it('reserve accepts hours unit', function () {
-        $this->model->reserve('processing', 2, 'hours');
+    it('reserve accepts hours() interval', function () {
+        $this->model->reserve('processing', hours(2));
 
         expect($this->model->isReserved('processing'))->toBeTrue();
 
@@ -712,8 +704,8 @@ describe('duration units', function () {
         expect($reservation->expiration)->toBeLessThanOrEqual($expectedExpiration + 1);
     });
 
-    it('reserve accepts days unit', function () {
-        $this->model->reserve('processing', 1, 'day');
+    it('reserve accepts days() interval', function () {
+        $this->model->reserve('processing', days(1));
 
         expect($this->model->isReserved('processing'))->toBeTrue();
 
@@ -723,8 +715,8 @@ describe('duration units', function () {
         expect($reservation->expiration)->toBeLessThanOrEqual($expectedExpiration + 1);
     });
 
-    it('reserve accepts weeks unit', function () {
-        $this->model->reserve('processing', 1, 'week');
+    it('reserve accepts weeks() interval', function () {
+        $this->model->reserve('processing', weeks(1));
 
         expect($this->model->isReserved('processing'))->toBeTrue();
 
@@ -734,8 +726,8 @@ describe('duration units', function () {
         expect($reservation->expiration)->toBeLessThanOrEqual($expectedExpiration + 1);
     });
 
-    it('reserve accepts seconds unit explicitly', function () {
-        $this->model->reserve('processing', 120, 'seconds');
+    it('reserve accepts seconds() interval', function () {
+        $this->model->reserve('processing', seconds(120));
 
         expect($this->model->isReserved('processing'))->toBeTrue();
 
@@ -745,8 +737,8 @@ describe('duration units', function () {
         expect($reservation->expiration)->toBeLessThanOrEqual($expectedExpiration + 1);
     });
 
-    it('blockingReserve accepts unit parameter', function () {
-        $result = $this->model->blockingReserve('processing', 5, 'minutes', 1);
+    it('blockingReserve accepts interval', function () {
+        $result = $this->model->blockingReserve('processing', minutes(5), 1);
 
         expect($result)->toBeTrue();
 
@@ -756,10 +748,10 @@ describe('duration units', function () {
         expect($reservation->expiration)->toBeLessThanOrEqual($expectedExpiration + 1);
     });
 
-    it('reserveWhile accepts unit parameter', function () {
+    it('reserveWhile accepts interval', function () {
         $callbackExecuted = false;
 
-        $result = $this->model->reserveWhile('processing', 5, 'minutes', function ($model) use (&$callbackExecuted) {
+        $result = $this->model->reserveWhile('processing', minutes(5), function ($model) use (&$callbackExecuted) {
             $callbackExecuted = true;
 
             return 'success';
@@ -769,10 +761,10 @@ describe('duration units', function () {
         expect($result)->toBe('success');
     });
 
-    it('extendReservation accepts unit parameter', function () {
-        $this->model->reserve('processing', 1, 'minute');
+    it('extendReservation accepts interval', function () {
+        $this->model->reserve('processing', minutes(1));
 
-        $result = $this->model->extendReservation('processing', 5, 'minutes');
+        $result = $this->model->extendReservation('processing', minutes(5));
 
         expect($result)->toBeTrue();
 
@@ -782,8 +774,8 @@ describe('duration units', function () {
         expect($reservation->expiration)->toBeLessThanOrEqual($expectedExpiration + 1);
     });
 
-    it('scopeReserveFor accepts unit parameter', function () {
-        $models = TestModel::reserveFor('worker-1', 5, 'minutes')->get();
+    it('scopeReserveFor accepts interval', function () {
+        $models = TestModel::reserveFor('worker-1', minutes(5))->get();
 
         expect($models)->toHaveCount(1);
 
@@ -793,82 +785,12 @@ describe('duration units', function () {
         expect($reservation->expiration)->toBeLessThanOrEqual($expectedExpiration + 1);
     });
 
-    it('handles singular and plural unit forms', function () {
-        // Singular
-        $model1 = TestModel::create(['name' => 'test1']);
-        $model1->reserve('test', 1, 'minute');
-        $reservation1 = $model1->reservations()->first();
-        $expectedExp1 = Carbon::now()->timestamp + 60;
-        expect($reservation1->expiration)->toBeGreaterThanOrEqual($expectedExp1 - 1);
-        expect($reservation1->expiration)->toBeLessThanOrEqual($expectedExp1 + 1);
-
-        // Plural
-        $model2 = TestModel::create(['name' => 'test2']);
-        $model2->reserve('test', 2, 'minutes');
-        $reservation2 = $model2->reservations()->first();
-        $expectedExp2 = Carbon::now()->timestamp + 120;
-        expect($reservation2->expiration)->toBeGreaterThanOrEqual($expectedExp2 - 1);
-        expect($reservation2->expiration)->toBeLessThanOrEqual($expectedExp2 + 1);
-    });
-
-    it('reserve accepts Carbon Unit enum', function () {
-        $this->model->reserve('processing', 5, Unit::Minute);
+    it('reserve accepts CarbonInterval', function () {
+        $this->model->reserve('processing', CarbonInterval::minutes(5));
 
         expect($this->model->isReserved('processing'))->toBeTrue();
 
         $reservation = $this->model->reservations()->first();
-        $expectedExpiration = Carbon::now()->timestamp + 300;
-        expect($reservation->expiration)->toBeGreaterThanOrEqual($expectedExpiration - 1);
-        expect($reservation->expiration)->toBeLessThanOrEqual($expectedExpiration + 1);
-    });
-
-    it('reserve accepts Carbon Unit::Hour', function () {
-        $this->model->reserve('processing', 2, Unit::Hour);
-
-        $reservation = $this->model->reservations()->first();
-        $expectedExpiration = Carbon::now()->timestamp + 7200;
-        expect($reservation->expiration)->toBeGreaterThanOrEqual($expectedExpiration - 1);
-        expect($reservation->expiration)->toBeLessThanOrEqual($expectedExpiration + 1);
-    });
-
-    it('blockingReserve accepts Carbon Unit enum', function () {
-        $result = $this->model->blockingReserve('processing', 5, Unit::Minute, 1);
-
-        expect($result)->toBeTrue();
-
-        $reservation = $this->model->reservations()->first();
-        $expectedExpiration = Carbon::now()->timestamp + 300;
-        expect($reservation->expiration)->toBeGreaterThanOrEqual($expectedExpiration - 1);
-        expect($reservation->expiration)->toBeLessThanOrEqual($expectedExpiration + 1);
-    });
-
-    it('reserveWhile accepts Carbon Unit enum', function () {
-        $result = $this->model->reserveWhile('processing', 5, Unit::Minute, function ($model) {
-            return 'success';
-        });
-
-        expect($result)->toBe('success');
-    });
-
-    it('extendReservation accepts Carbon Unit enum', function () {
-        $this->model->reserve('processing', 1, Unit::Minute);
-
-        $result = $this->model->extendReservation('processing', 10, Unit::Minute);
-
-        expect($result)->toBeTrue();
-
-        $reservation = $this->model->reservations()->first();
-        $expectedExpiration = Carbon::now()->timestamp + 600;
-        expect($reservation->expiration)->toBeGreaterThanOrEqual($expectedExpiration - 1);
-        expect($reservation->expiration)->toBeLessThanOrEqual($expectedExpiration + 1);
-    });
-
-    it('scopeReserveFor accepts Carbon Unit enum', function () {
-        $models = TestModel::reserveFor('worker-1', 5, Unit::Minute)->get();
-
-        expect($models)->toHaveCount(1);
-
-        $reservation = $models->first()->reservations()->first();
         $expectedExpiration = Carbon::now()->timestamp + 300;
         expect($reservation->expiration)->toBeGreaterThanOrEqual($expectedExpiration - 1);
         expect($reservation->expiration)->toBeLessThanOrEqual($expectedExpiration + 1);
