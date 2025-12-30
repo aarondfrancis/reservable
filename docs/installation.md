@@ -7,8 +7,8 @@
 - Database cache driver configured
 
 **Supported databases:**
-- PostgreSQL 17, 18
-- MySQL 8
+- PostgreSQL
+- MySQL/MariaDB
 - SQLite (with some limitations)
 
 ## Install via Composer
