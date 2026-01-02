@@ -1,10 +1,14 @@
 <?php
 
+use AaronFrancis\Reservable\Models\CacheLock;
 use AaronFrancis\Reservable\Tests\Models\AnotherTestModel;
+use AaronFrancis\Reservable\Tests\Models\CustomCacheLock;
 use AaronFrancis\Reservable\Tests\Models\TestModel;
 use Carbon\Carbon;
 use Carbon\CarbonInterval;
 use DateInterval;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 beforeEach(function () {
     $this->model = TestModel::create(['name' => 'Test']);
@@ -179,6 +183,20 @@ describe('query scopes', function () {
 
         expect($secondTry)->toHaveCount(0);
     });
+
+    it('reserves only unreserved models', function () {
+        $model2 = TestModel::create(['name' => 'Test 2']);
+        $model3 = TestModel::create(['name' => 'Test 3']);
+
+        $model2->reserve('processing', 60);
+
+        $reserved = TestModel::reserveFor('processing', 60)->get();
+
+        expect($reserved)->toHaveCount(2);
+        expect($reserved->pluck('id')->all())->not->toContain($model2->id);
+        expect($model2->isReserved('processing'))->toBeTrue();
+        expect($model3->isReserved('processing'))->toBeTrue();
+    });
 });
 
 describe('reservations relationship', function () {
@@ -214,6 +232,36 @@ describe('reservations relationship', function () {
 
         expect($this->model->reservations)->toHaveCount(1);
         expect($model2->reservations)->toHaveCount(1);
+    });
+
+    it('excludes non-reservation locks', function () {
+        $this->model->reserve('processing', 60);
+
+        DB::table('cache_locks')->insert([
+            'key' => 'non-reservation-lock',
+            'owner' => 'owner',
+            'expiration' => Carbon::now()->addMinute()->timestamp,
+        ]);
+
+        $this->model->refresh();
+
+        expect($this->model->reservations)->toHaveCount(1);
+    });
+});
+
+describe('cache lock model configuration', function () {
+    it('uses the configured cache lock model for reservations', function () {
+        config(['reservable.model' => CustomCacheLock::class]);
+
+        try {
+            $this->model->reserve('processing', 60);
+
+            $reservation = $this->model->reservations()->first();
+
+            expect($reservation)->toBeInstanceOf(CustomCacheLock::class);
+        } finally {
+            config(['reservable.model' => CacheLock::class]);
+        }
     });
 });
 
@@ -483,6 +531,26 @@ describe('extendReservation', function () {
         $result = $this->model->extendReservation('processing', CarbonInterval::minutes(5));
 
         expect($result)->toBeTrue();
+    });
+
+    it('extends reservations when cache prefix is set', function () {
+        $originalPrefix = Cache::getPrefix();
+        Cache::setPrefix('reservable_test_prefix_');
+
+        try {
+            $this->model->reserve('processing', 10);
+
+            Carbon::setTestNow(now()->addSeconds(5));
+
+            $result = $this->model->extendReservation('processing', 60);
+
+            expect($result)->toBeTrue();
+
+            $reservation = $this->model->reservations()->first();
+            expect($reservation->expiration)->toBeGreaterThan(Carbon::now()->timestamp + 50);
+        } finally {
+            Cache::setPrefix($originalPrefix);
+        }
     });
 });
 
