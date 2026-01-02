@@ -74,18 +74,18 @@ return [
 
 ## Database Configuration
 
-### Cache Driver
+### Cache Store
 
-Reservable requires the database cache driver. Configure in `.env`:
+Reservable requires the database cache store. Configure in `.env`:
 
 ```env
-CACHE_DRIVER=database
+CACHE_STORE=database
 ```
 
 Or in `config/cache.php`:
 
 ```php
-'default' => env('CACHE_DRIVER', 'database'),
+'default' => env('CACHE_STORE', 'database'),
 
 'stores' => [
     'database' => [
@@ -121,7 +121,7 @@ The exact SQL for generated columns varies by database:
 No package-specific environment variables are required. Standard Laravel cache configuration applies:
 
 ```env
-CACHE_DRIVER=database
+CACHE_STORE=database
 DB_CACHE_CONNECTION=null
 DB_CACHE_TABLE=cache
 DB_CACHE_LOCK_CONNECTION=null

@@ -9,7 +9,7 @@ Reservable allows you to temporarily "reserve" Eloquent models using Laravel's a
 ## Key Features
 
 - **Atomic Reservations** — Uses Laravel's cache locks for race-condition-safe reservations
-- **Flexible Duration** — Reserve for seconds, until a specific time, or with string dates
+- **Flexible Duration** — Reserve for seconds, until a specific time, or with Carbon/DateInterval durations
 - **Query Scopes** — Find and filter reserved/unreserved models efficiently
 - **Multiple Reservation Types** — A model can have multiple different reservation types simultaneously
 - **Key Flexibility** — Use strings, enums, or objects as reservation keys
@@ -61,4 +61,4 @@ The package migration adds generated columns to the `cache_locks` table that par
 
 - PHP 8.2+
 - Laravel 11 or 12
-- Database cache driver (PostgreSQL, MySQL, or SQLite)
+- Database cache store (PostgreSQL, MySQL, or SQLite)

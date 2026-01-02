@@ -212,7 +212,7 @@ public function scopeReserveFor(
 ): void
 ```
 
-Find unreserved models and atomically reserve them. Models that fail to reserve (race conditions) are filtered from results.
+Find unreserved models and reserve each with an atomic lock. Models that fail to reserve (race conditions) are filtered from results.
 
 **Parameters:**
 - `$key` — The reservation key

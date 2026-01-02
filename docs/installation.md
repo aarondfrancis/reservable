@@ -4,12 +4,12 @@
 
 - PHP 8.2 or higher
 - Laravel 11.x or 12.x
-- Database cache driver configured
+- Database cache store configured
 
 **Supported databases:**
 - PostgreSQL
 - MySQL/MariaDB
-- SQLite (with some limitations)
+- SQLite 3.31+ (generated columns required)
 
 ## Install via Composer
 
@@ -40,23 +40,23 @@ This creates `config/reservable.php` where you can specify a custom model.
 
 ## Database Cache Setup
 
-Reservable requires Laravel's database cache driver. Ensure you have the cache tables:
+Reservable requires Laravel's database cache store. Ensure you have the cache tables:
 
 ```bash
 php artisan make:cache-table
 php artisan migrate
 ```
 
-Then set your cache driver in `.env`:
+Then set your cache store in `.env`:
 
 ```env
-CACHE_DRIVER=database
+CACHE_STORE=database
 ```
 
 Or in `config/cache.php`:
 
 ```php
-'default' => 'database',
+'default' => env('CACHE_STORE', 'database'),
 ```
 
 ## Add the Trait

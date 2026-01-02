@@ -40,7 +40,7 @@ $count = Video::reserved('transcoding')->count();
 
 ## reserveFor()
 
-Find unreserved models and atomically reserve them in one operation:
+Find unreserved models and reserve each with an atomic lock:
 
 ```php
 // Get up to 5 unreserved videos and reserve them
