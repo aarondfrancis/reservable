@@ -55,17 +55,17 @@ describe('migration stub', function () {
 
         $originalSchema = Schema::getFacadeRoot();
 
-        $fakeConnection = new class {
+        $fakeConnection = new class
+        {
             public function getDriverName(): string
             {
                 return 'sqlsrv';
             }
         };
 
-        $fakeSchema = new class($fakeConnection) {
-            public function __construct(private object $connection)
-            {
-            }
+        $fakeSchema = new class($fakeConnection)
+        {
+            public function __construct(private object $connection) {}
 
             public function getConnection(): object
             {
